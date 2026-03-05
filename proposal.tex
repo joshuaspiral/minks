@@ -19,14 +19,57 @@ Whilst manually reviewing every note to add missing links between notes is a val
 \textbf{"Can we use graph-based link prediction algorithms augmented with NLP to suggest meaningful missing connections in an Obsidian knowledge graph, and how do the algorithms' judgements compare with a user's own judgement of which notes should be linked?"}
 
 \section*{Computational Plan}
-\subsection{Data Representation}
-\subsection{Computations}
-- jaccard similarity
-- adamic adar index: jaccard similarity but weighting shared neighbours inversely to their degree (to )
-- content based cosine similarity: nlp stuff
-- degree centrality + connected components for statistics while running 
+\subsection*{Data Representation}
+We will model an Obsidian vault as an undirected graph, $G = (V, E)$, where each Markdown note is a vertex $v \in V$ and each WikiLink between two notes is an edge $\{u, v\} \in E$. 
+- include some stuff about how it's _tecnhically_ an directed graph, but since our goal is link prediction, it makes more sense to consider it as an undirected graph\dots
 
-also will run on open source obsidian vaults as well as mine, since im worried my vault isnt big enough
+Each vertex $v$ will contain the following data:
+- note\_name (filename minus the .md)
+- note\_content (plaintext body)
+
+
+We will use two datasets for our evaluation: one of our group members' personal Obsidian vaults used mainly in notetaking for school, and the open source vault of Jacky Zhao (jzhao.xyz), which contains (add numbers) notes spanning computer science to philosophy. Two datasets are used due to the concern of a small dataset (mine) leading to trivial results. With a richer and denser dataset, we hope to see emergent patterns with good judgement
+
+Before constructing the graph, we will need to process the notes via a cleaning pipeline:
+ - strip image Embeddings
+ - remove tags
+- strip frontmatter(?) / parse for metadata
+- extract all WikiLinks
+- extract plaintext body
+
+\subsection{Computations}
+We plan to implement link predictions in three stages. At each stage, we will tweak a similarity signal and evaluate how the predictions change. Hopefully we will be able to deduce how different similarity signals affect the judgements made by the algorithm. 
+
+Stage 1: Structural similarity (Jaccard)
+turn neighs into sets -> use jaccard on sets -> get number
+
+Stage 2: **Weighted** structural similarity (Adamic-Adar)
+> A weighted version of Common Neighbours that gives higher importance to rare mutual connections
+ 
+https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.link_prediction.adamic_adar_index.html
+https://www.geeksforgeeks.org/python/link-prediction-predict-edges-in-a-network-using-networkx/
+https://graphty-org.github.io/algorithms/examples/algorithms/link-prediction/adamic-adar.html
+cool visualisation!
+
+Stage 3: Semantic similarity via Sentence-BERT
+- sentence embeddings for each note's plaintext body with sentence-transformers lib (all-MiniLM-L6-v2?)
+- use SentenceTransformer.encode() -> maps text to 384D vectors for semantic meaningful -> cosine similarity between embedding pairs
+- allows us to detect similarity between notes that may share no structural similarity but have semantic similarity (related to the same thing)
+
+Stage ? combined score:
+- Compute a weighted combination of the structural score (max of Jaccard and Adamic-Adar, normalised), and semantic score
+
+How can we quantify whether or not an evaluation is _good_?
+
+Evaluation via edge holdout:
+Sort of like Catherine's idea: remove a random 20\% of existing edges -> run full prediction pipeline -> measure fraction of held-out edges appearing in the top-$k$ predictions\dots
+
+https://www.geeksforgeeks.org/software-engineering/introduction-of-holdout-method/
+https://jordan-hay.github.io/jekyll/update/data/2023/11/30/classifiereval.html
+
+Graph statistics:
+- we can also compute degree centrality per vertex to identify "hub" notes, and run connected_components to detect isolated clusters (maybe provide info to the user on how they can improve the interwovenness of their notes)
+- can compare these statistics before and after prediction pipeline to see how the predictions affect the structure of the graph
 
 \subsection{Visualisation}
 - Plotly (plotly.graph\_objects)
