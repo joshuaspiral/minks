@@ -82,19 +82,29 @@ Graph statistics:
 - we can also compute degree centrality per vertex to identify "hub" notes, and run connected\_components to detect isolated clusters (maybe provide info to the user on how they can improve the interwovenness of their notes)
 - can compare these statistics before and after prediction pipeline to see how the predictions affect the structure of the graph
 
-\subsection{Visualisation}
-- Plotly (plotly.graph\_objects)
-- NetworkX , networkx.spring\_layout
+:\subsection{Visualisation}
 
+Interactive, graph-based visualisation of notes is a crucial component of PKM systems such as Obsidian. To plot user notes in an intuitive way, we plan to implement a pipeline that decouples the graph calculation algorithms from visualization. We plan to use the \textbf{NetworkX} and \textbf{Plotly} libraries. 
+
+
+\subsubsection{NetworkX}
+Our core graph algorithms will not use NetworkX. The identifaction of missing links and graph/vertex classes will be written entirely by us, resulting in a custom graph class that handles these computations. However, calculating a visually pleasing, untangled layout of the nodes in this graph involves complex physics-based computations. We plan to employ NetworkX's force-directed algorithms to accomplish this in an optimized fashion. 
+
+Once our code has finished computing the link predictions, we plan to pipe our graph topology to a NetworkX \texttt{networkx.Graph} object. We will then pass this object to the \texttt{networkx.spring\_layout()} function. This function treats the graph as a physical system, treating edges as springs that pull notes together and vertices as magnets that repel each other. The function runs this physics simulation and outputs the calculated 2D coordinates of each node. 
+
+\subsubsection{Plotly}
+Once the 2D coordinates have been generated through NetworkX, 
 
 \section*{References}
 \begin{enumerate}
+
     \item \label{ref:obsidian} Obsidian. \textit{Obsidian --- Sharpen your thinking}. \url{https://obsidian.md/}. Accessed 27 Feb.\ 2026.
     \item \label{ref:adamic} Adamic, L.\ A.\ \& Adar, E. (2003). Friends and neighbors on the Web. \textit{Social Networks}, 25(3), 211--230. \url{https://doi.org/10.1016/S0378-8733(03)00009-1}
     \item \label{ref:reimers} Reimers, N.\ \& Gurevych, I. (2019). Sentence-BERT: Sentence Embeddings using Siamese BERT-Networks. \textit{Proceedings of the 2019 Conference on Empirical Methods in Natural Language Processing (EMNLP-IJCNLP)}, 3982--3992. \url{https://doi.org/10.18653/v1/D19-1410}
     \item \label{ref:plotly} Plotly Python Graphing Library --- Network Graphs. \url{https://plotly.com/python/network-graphs/}
     \item \label{ref:networkx} NetworkX: Network Analysis in Python. \url{https://networkx.org/}
     \item \label{ref:sbert_lib} Sentence-Transformers Documentation. \url{https://www.sbert.net/}
+
 \end{enumerate}
 
 % NOTE: LaTeX does have a built-in way of generating references automatically,
