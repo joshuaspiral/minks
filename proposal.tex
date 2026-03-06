@@ -18,14 +18,14 @@ Personal knowledge management (PKM) tools such as Obsidian allow users to organi
 Whilst manually reviewing every note to add missing links between notes is a valuable learning activity due to the mental friction required, (include citation about how friction commits better to memory or something) , it becomes impractical when the PKM system grows.
 
 \subsection{Research Question}
-\textbf{"Can we use graph-based link prediction algorithms augmented with NLP to suggest meaningful missing connections in an Obsidian knowledge graph, and how do the algorithms' judgements compare with a user's own judgement of which notes should be linked?"}
+\textbf{"Can we use graph-based link prediction<C-2-t_ý€>Ã½require"cmp.utils.feedkeys".run(3)
+.algorithms augmented with NLP to suggest meaningful missing connections in an Obsidian knowledge graph, and how do the algorithms' judgements compare with a user's own judgement of which notes should be linked?"}
 
 \section*{Computational Plan}
 \subsection*{Data Representation}
-We will model an Obsidian vault as an undirected graph, $G = (V, E)$, where each Markdown note is a vertex $v \in V$ and each WikiLink between two notes is an edge $\{u, v\} \in E$. 
-- include some stuff about how it's _tecnhically_ an directed graph, but since our goal is link prediction, it makes more sense to consider it as an undirected graph\dots
+We will model an Obsidian vault as an undirected graph, $G = (V, E)$, where each Markdown note is a vertex $v \in V$ and each WikiLink between two notes is an edge $\{u, v\} \in E$. Despite graphs with WikiLinks technically being a directed graph, for example, a note titled "Graphs" would link to "Vertex" but not vice versa, we will represent the graph with an undirected graph, due to the goal being link prediction. 
 
-Each vertex $v$ will contain the following data:
+Each vertex $v$ will be an object containing the following instance attributes:
 - note\_name (filename minus the .md)
 - note\_content (plaintext body)
 
