@@ -1,6 +1,13 @@
 \begin{thebibliography}{1}
 
 \bibitem{adamic2003}
-L.~A. Adamic and E.~Adar, ``Friends and neighbors on the web,'' {\em Social Networks}, vol.~25, no.~3, pp.~211--230, 2003.
+L.~A. Adamic and E.~Adar, ``Friends and neighbors on the web,'' {\em Social
+  Networks}, vol.~25, no.~3, pp.~211--230, 2003.
+
+\bibitem{reimers2019}
+N.~Reimers and I.~Gurevych, ``Sentence-{BERT}: Sentence embeddings using
+  siamese {BERT}-networks,'' in {\em Proceedings of the 2019 Conference on
+  Empirical Methods in Natural Language Processing (EMNLP-IJCNLP)},
+  pp.~3982--3992, Association for Computational Linguistics, 2019.
 
 \end{thebibliography}
