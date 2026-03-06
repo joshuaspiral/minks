@@ -56,35 +56,27 @@ $$
 
 This captures the intuition that a rare mutual connection is more informative than a highly connected hub vertex \cite{adamic2003}. In a knowledge graph, a shared neighbour that is a highly specific concept (low degree) is stronger evidence for a missing link than a shared neighbour that is a broad hub note linking to everything.
  
-https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.link\_prediction.adamic\_adar\_index.html
-https://www.geeksforgeeks.org/python/link-prediction-predict-edges-in-a-network-using-networkx/
-https://graphty-org.github.io/algorithms/examples/algorithms/link-prediction/adamic-adar.html
-cool visualisation!
 
-Stage 3: Semantic similarity via Sentence-BERT
-- sentence embeddings for each note's plaintext body with sentence-transformers lib (all-MiniLM-L6-v2?)
-- use SentenceTransformer.encode() -> maps text to 384D vectors for semantic meaningful -> cosine similarity between embedding pairs
-- allows us to detect similarity between notes that may share no structural similarity but have semantic similarity (related to the same thing)
+\textbf{Stage 3: Semantic similarity (Sentence-BERT)}
+Structural methods can only detect similarity between notes that already share neighbours, which is an issue considering the original user's problem: the lack of lateral connections. To capture relationships between structurally disconnected but semantically related notes, we will generate sentence embeddings for each note's plaintext body using the \texttt{sentence-transformers} library with the \texttt{all-MiniLM-L6-v2} model \cite{reimers2019}. This model maps text to 384-dimensional vectors. We will then compute cosine similarity between all embedding pairs. 
 
-Stage ? combined score:
-- Compute a weighted combination of the structural score (max of Jaccard and Adamic-Adar, normalised), and semantic score
+We will use Sentence-BERT encoding since embedding 10,000 sentences takes seconds rather than the 65 hours required by vanilla BERT \cite{reimers2019}, which is vital to ensuring that the algorithm can feasibly run on large vaults. \texttt{sentence-transformers} provides the \texttt{SentenceTransformer} class with an \texttt{encode()} method that accepts a list of strings and returns a NumPy array of embedding vectors, and we will use \texttt{sklearn.metrics.pairwise.cosine\_similarity} to compute the similarity matrix.
 
-How can we quantify whether or not an evaluation is \_good\_?
+\textbf{Combined score}
+Finally, we will compute a weighted combination of the structural score (the maximum of the normalized Jaccard and Adamic-Adar scores) and the semantic similarity score. This combined score ranks all non-adjacent vertex pairs and produces the final set of link predictions.
 
-Evaluation via edge holdout:
-Sort of like Catherine's idea: remove a random 20\% of existing edges -> run full prediction pipeline -> measure fraction of held-out edges appearing in the top-$k$ predictions\dots
+\textbf{Evaluation via edge holdout.}
+#todo refine this section
+Evaluating whether or not the algoirthm produced a "good judgement" of what missing links should be added, we can do so quantiatively and qualitatively. 
 
-talk about the limitations of using edge holdout:
-- how do you know which 20\% to remove? wouldn't randomness lead to more "important" edges being taken - 
+Qualitatively, we can see if the missing links make sense and are non-trivial (a trivial link would be "CSC111.md" to "CSC111 Syllabus.md").
 
-https://www.geeksforgeeks.org/software-engineering/introduction-of-holdout-method/
-https://jordan-hay.github.io/jekyll/update/data/2023/11/30/classifiereval.html
+To quantitatively evaluate prediction quality, we will use an edge holdout method: we randomly remove 20\% of existing edges from $G$, run the full prediction pipeline on the reduced graph, and measure the fraction of held-out edges that appear in the top-$k$ predictions (recall@$k$). We acknowledge a limitation: random removal may disproportionately remove structurally important edges, which we will address by averaging results over multiple random holdout trials.
 
-Graph statistics:
-- we can also compute degree centrality per vertex to identify "hub" notes, and run connected\_components to detect isolated clusters (maybe provide info to the user on how they can improve the interwovenness of their notes)
-- can compare these statistics before and after prediction pipeline to see how the predictions affect the structure of the graph
+\textbf{Graph statistics.}
+We will also compute degree centrality per vertex to identify hub notes, and run connected-component analysis to detect isolated clusters. Comparing these statistics before and after applying the predicted links will illustrate how the predictions affect the overall structure and connectivity of the knowledge graph.
 
-:\subsection{Visualisation}
+\subsection{Visualisation}
 
 Interactive, graph-based visualisation of notes is a crucial component of PKM systems such as Obsidian. To plot user notes in an intuitive way, we plan to implement a pipeline that decouples the graph calculation algorithms from visualization. We plan to use the \textbf{NetworkX} and \textbf{Plotly} libraries. 
 
