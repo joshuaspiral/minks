@@ -2,6 +2,7 @@
 \usepackage{amsmath}
 \usepackage[utf8]{inputenc}
 \usepackage[margin=0.75in]{geometry}
+\usepackage{hyperref}
 
 \title{CSC111 Project Proposal: }
 \author{Caellum Yip Hoi-Lee, Catherine Abdul-Samad, Michael Chen, Joshua Yeung}
@@ -18,8 +19,7 @@ Personal knowledge management (PKM) tools such as Obsidian allow users to organi
 Whilst manually reviewing every note to add missing links between notes is a valuable learning activity due to the mental friction required, (include citation about how friction commits better to memory or something) , it becomes impractical when the PKM system grows.
 
 \subsection{Research Question}
-\textbf{"Can we use graph-based link prediction<C-2-t_ý€>Ã½require"cmp.utils.feedkeys".run(3)
-.algorithms augmented with NLP to suggest meaningful missing connections in an Obsidian knowledge graph, and how do the algorithms' judgements compare with a user's own judgement of which notes should be linked?"}
+\textbf{"Can we use graph-based link prediction algorithms augmented with NLP to suggest meaningful missing connections in an Obsidian knowledge graph, and how do the algorithms' judgements compare with a user's own judgement of which notes should be linked?"}
 
 \section*{Computational Plan}
 \subsection*{Data Representation}
@@ -30,25 +30,27 @@ Each vertex $v$ will be an object containing the following instance attributes:
 - note\_content (plaintext body)
 
 
-We will use two datasets for our evaluation: one of our group members' personal Obsidian vaults used mainly in notetaking for school, and the open source vault of Jacky Zhao (jzhao.xyz), which contains (add numbers) notes spanning computer science to philosophy. Two datasets are used due to the concern of a small dataset (mine) leading to trivial results. With a richer and denser dataset, we hope to see emergent patterns with good judgement
+We will use two datasets for our evaluation: one of our group members' personal Obsidian vaults used mainly in notetaking for school, and the open source vault of Jacky Zhao (jzhao.xyz), which contains over 740 notes spanning from computer science to philosophy. Two datasets are used due to the concern of a small dataset (mine) leading to trivial results. With a richer and denser dataset, we hope to see emergent patterns and clearer signs of effective judgement by the augmented algorithms.
 
 Before constructing the graph, we will need to process the notes via a cleaning pipeline:
- - strip image Embeddings
- - remove tags
-- strip frontmatter(?) / parse for metadata
-- extract all WikiLinks
-- extract plaintext body
+\begin{enumerate}
+	\item strip image Embeddings
+	\item remove tags
+	\item strip frontmatter(?) / parse for metadata
+	\item extract all WikiLinks
+	\item extract plaintext body
+\end{enumerate}
 
 \subsection{Computations}
-We plan to implement link predictions in three stages. At each stage, we will tweak a similarity signal and evaluate how the predictions change. Hopefully we will be able to deduce how different similarity signals affect the judgements made by the algorithm. 
+We plan to implement link predictions in three stages. At each stage, we will tweak a similarity signal and evaluate how the predictions change. Hopefully we will be able to deduce how different similarity signals affect the ju:dgements made by the algorithm. 
 
 Stage 1: Structural similarity (Jaccard)
-turn neighs into sets -> use jaccard on sets -> get number
+Turn Neighbourhoods into sets -> use Jaccard on sets -> get number
 
 Stage 2: **Weighted** structural similarity (Adamic-Adar)
 > A weighted version of Common Neighbours that gives higher importance to rare mutual connections
  
-https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.link_prediction.adamic_adar_index.html
+https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.link\_prediction.adamic\_adar\_index.html
 https://www.geeksforgeeks.org/python/link-prediction-predict-edges-in-a-network-using-networkx/
 https://graphty-org.github.io/algorithms/examples/algorithms/link-prediction/adamic-adar.html
 cool visualisation!
@@ -61,7 +63,7 @@ Stage 3: Semantic similarity via Sentence-BERT
 Stage ? combined score:
 - Compute a weighted combination of the structural score (max of Jaccard and Adamic-Adar, normalised), and semantic score
 
-How can we quantify whether or not an evaluation is _good_?
+How can we quantify whether or not an evaluation is \_good\_?
 
 Evaluation via edge holdout:
 Sort of like Catherine's idea: remove a random 20\% of existing edges -> run full prediction pipeline -> measure fraction of held-out edges appearing in the top-$k$ predictions\dots
@@ -73,7 +75,7 @@ https://www.geeksforgeeks.org/software-engineering/introduction-of-holdout-metho
 https://jordan-hay.github.io/jekyll/update/data/2023/11/30/classifiereval.html
 
 Graph statistics:
-- we can also compute degree centrality per vertex to identify "hub" notes, and run connected_components to detect isolated clusters (maybe provide info to the user on how they can improve the interwovenness of their notes)
+- we can also compute degree centrality per vertex to identify "hub" notes, and run connected\_components to detect isolated clusters (maybe provide info to the user on how they can improve the interwovenness of their notes)
 - can compare these statistics before and after prediction pipeline to see how the predictions affect the structure of the graph
 
 \subsection{Visualisation}
@@ -83,11 +85,11 @@ Graph statistics:
 
 \section*{References}
 \begin{enumerate}
-    https://obsidian.md/ 27 Feb. 2026.
-    https://plotly.com/python/network-graphs/
-    https://networkx.org/
-    https://aclanthology.org/D19-1410/
-    https://aclanthology.org/volumes/D19-1/
+	\item \url{https://obsidian.md/ 27 Feb. 2026.}
+	\item \url{https://plotly.com/python/network-graphs/}
+	\item \url{https://networkx.org/}
+	\item \url{Reimers, Nils, and Iryna Gurevych. Sentence-BERT: Sentence Embeddings using Siamese BERT-Networks.}
+	\item \url{Proceedings of the 2019 Conference on Empirical Methods in Natural Language Processing, 2019.}
 \end{enumerate}
 
 
