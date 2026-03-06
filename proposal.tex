@@ -13,42 +13,46 @@
 
 \section*{Problem Description and Research Question}
 
-- motivation: explain a bit of the psychology behind how obsidian tries to mimic the interwovenness of the human memory and how it's not isolated and stuff.
-Personal knowledge management (PKM) tools such as Obsidian allow users to organize their knowledge as a network of interlinked notes. A note in the network can link to other notes in the network through internal links called "WikiLinks", forming a graph where the notes are vertices and the links are edges. The benefit of such a system lies in its ability to provide users insights into the relationship between ideas, and build a stronger understanding of their notes. However, many users (including ourselves), tend to under-link their notes, leading to a lackluster knowledge network. For example, one of the ways one of our group members uses Obsidian is through a "hub-and-spoke" topology, where minimal note vertices known as "hubs" form a directory with WikiLinks to other notes in the same topic (e.g. a hub named "CSC111.md" with WikiLinks to ([[Tree]], [[Recursion]], etc.). This however, defeats the purpose of Obsidian, failing to capture the lateral connections notes can have in the network which actually make a knowledge graph useful (e.g. generating links between [[Trees]] to [[Abstract Syntax Trees (CS)]] to [[Abstract Syntax Trees (Linguistics)]]). 
+Personal knowledge management (PKM) tools such as Obsidian implement the Zettelkasten methodology, allowing users to organize their knowledge as a network of interlinked Markdown notes. A note in the network can link to other notes in the network through internal links called "WikiLinks", forming a graph where the notes are vertices and the links are edges. The benefit of such a system lies in its ability to provide users with insights into the relationship between ideas, and build a stronger understanding of their notes. However, many users (including ourselves), tend to under-link their notes, leading to a lackluster knowledge network. For example, one of the ways one of our group members uses Obsidian is through a "hub-and-spoke" structure, where minimal note vertices known as "hubs" form a directory with WikiLinks to other notes in the same topic (e.g. a hub named "CSC111.md" with WikiLinks to ("Tree.md", "Recursion.md", etc.). This however, defeats the purpose of Obsidian, failing to capture the lateral connections notes can have in the network which actually make a knowledge graph useful. For instance, a link from "Trees.md" to "Abstract Syntax Trees (CS).md" to "Abstract Syntax Trees (Linguistics).md".
 
-Whilst manually reviewing every note to add missing links between notes is a valuable learning activity due to the mental friction required, (include citation about how friction commits better to memory or something) , it becomes impractical when the PKM system grows.
+Whilst manually reviewing every note to add missing links is a valuable learning activity, it becomes highly impractical as a PKM system grows to hundreds or thousands of notes.
 
 \subsection{Research Question}
-\textbf{"Can we use graph-based link prediction algorithms augmented with NLP to suggest meaningful missing connections in an Obsidian knowledge graph, and how do the algorithms' judgements compare with a user's own judgement of which notes should be linked?"}
+\textbf{"Can we use graph-based link prediction algorithms augmented with NLP-based semantic similarity to suggest meaningful missing connections in an Obsidian knowledge graph, and how do the algorithms' judgements compare with a user's own judgement of which notes should be linked?"}
 
 \section*{Computational Plan}
 \subsection*{Data Representation}
-We will model an Obsidian vault as an undirected graph, $G = (V, E)$, where each Markdown note is a vertex $v \in V$ and each WikiLink between two notes is an edge $\{u, v\} \in E$. Despite graphs with WikiLinks technically being a directed graph, for example, a note titled "Graphs" would link to "Vertex" but not vice versa, we will represent the graph with an undirected graph, due to the goal being link prediction. 
+We will model an Obsidian vault as an undirected graph, $G = (V, E)$, where each Markdown note is a vertex $v \in V$ and each WikiLink between two notes is an edge $\{u, v\} \in E$. Despite graphs with WikiLinks syntactically being a directed graphs (a note titled "Graphs" would link to "Vertex" but not necessarily vice versa) we will represent the graph with an undirected graph, since for the purposes of link prediction, we care about the \textit{existence} of a relationship between two vertices, not its direction.
 
-Each vertex $v$ will be an object containing the following instance attributes:
-- note\_name (filename minus the .md)
-- note\_content (plaintext body)
+Each vertex $v$ will store the following instance attributes:
+\begin{itemize}
+    \item \texttt{note\_name}: the filename without the .md extension
+    \item \texttt{note\_content}: the plaintext body after processing
+\end{itemize}
 
 
-We will use two datasets for our evaluation: one of our group members' personal Obsidian vaults used mainly in notetaking for school, and the open source vault of Jacky Zhao (jzhao.xyz), which contains over 740 notes spanning from computer science to philosophy. Two datasets are used due to the concern of a small dataset (mine) leading to trivial results. With a richer and denser dataset, we hope to see emergent patterns and clearer signs of effective judgement by the augmented algorithms.
+We will use two datasets for our evaluation. The first is one of our group members' personal Obsidian vaults, used mainly in notetaking for course notes. The second is the open source \textit{digital garden} of Jacky Zhao (\url{jzhao.xyz}). Zhao's vault contains over 700 notes spanning computer science, philosophy and other topics, providing a denser and more diverse graph than our personal vault alone. Two datasets are used to allow us to test whether our pipeline generalizes beyond small, topic-narrow vaults.
 
-Before constructing the graph, we will need to process the notes via a cleaning pipeline:
-\begin{enumerate}
-	\item strip image Embeddings
-	\item remove tags
-	\item strip frontmatter(?) / parse for metadata
-	\item extract all WikiLinks
-	\item extract plaintext body
-\end{enumerate}
+Before constructing the graph, we will need to process the notes via a cleaning pipeline: stripping image embeddings, removing YAML frontmatter, removing tags, extracting all WikiLinkns, and extracting the remaining plaintex body for NLP-based semantic similarity.
 
 \subsection{Computations}
-We plan to implement link predictions in three stages. At each stage, we will tweak a similarity signal and evaluate how the predictions change. Hopefully we will be able to deduce how different similarity signals affect the ju:dgements made by the algorithm. 
+We plan to implement link predictions in three stages. At each stage, we will tweak a similarity signal and evaluate how the predictions change. Hopefully we will be able to deduce how different similarity signals affect the judgements made by the algorithm. 
 
-Stage 1: Structural similarity (Jaccard)
-Turn Neighbourhoods into sets -> use Jaccard on sets -> get number
+\textbf{Stage 1: Structural similarity (Jaccard)}
+For each pair of non-adjacent vertices $(u,v)$, we can compute the Jaccard index over their neighbour sets:
+$$
+J(u,v) = \frac{|\Gamma(u) \cap \Gamma(v)|}{|\Gamma(u) \cup \Gamma(v)|}
+$$
+where $\Gamma(u)$ represents the set of neighbours of $u$. This captures the intuitive idea regarding structural similarity: if two notes share many common neighbours, then they are likely related.
 
-Stage 2: **Weighted** structural similarity (Adamic-Adar)
-> A weighted version of Common Neighbours that gives higher importance to rare mutual connections
+\textbf{Stage 2: **Weighted** structural similarity (Adamic-Adar)}
+The Adamic-Adar index is a weighted version of common-neighbour counting, assigning higher weight to shared neighbours with fewer connections: 
+
+$$
+A(u, v) = \sum_{w \in \Gamma(u) \cap \Gamma(v)} \frac{1}{\log |\Gamma(w)|}
+$$
+
+This captures the intuition that a rare mutual connection is more informative than a highly connected hub vertex \cite{adamic}. In a knowledge graph, a shared neighbour that is a highly specific concept (low degree) is stronger evidence for a missing link than a shared neighbour that is a broad hub note linking to everything.
  
 https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.link\_prediction.adamic\_adar\_index.html
 https://www.geeksforgeeks.org/python/link-prediction-predict-edges-in-a-network-using-networkx/
@@ -85,13 +89,13 @@ Graph statistics:
 
 \section*{References}
 \begin{enumerate}
-	\item \url{https://obsidian.md/ 27 Feb. 2026.}
-	\item \url{https://plotly.com/python/network-graphs/}
-	\item \url{https://networkx.org/}
-	\item \url{Reimers, Nils, and Iryna Gurevych. Sentence-BERT: Sentence Embeddings using Siamese BERT-Networks.}
-	\item \url{Proceedings of the 2019 Conference on Empirical Methods in Natural Language Processing, 2019.}
+    \item \label{ref:obsidian} Obsidian. \textit{Obsidian --- Sharpen your thinking}. \url{https://obsidian.md/}. Accessed 27 Feb.\ 2026.
+    \item \label{ref:adamic} Adamic, L.\ A.\ \& Adar, E. (2003). Friends and neighbors on the Web. \textit{Social Networks}, 25(3), 211--230. \url{https://doi.org/10.1016/S0378-8733(03)00009-1}
+    \item \label{ref:reimers} Reimers, N.\ \& Gurevych, I. (2019). Sentence-BERT: Sentence Embeddings using Siamese BERT-Networks. \textit{Proceedings of the 2019 Conference on Empirical Methods in Natural Language Processing (EMNLP-IJCNLP)}, 3982--3992. \url{https://doi.org/10.18653/v1/D19-1410}
+    \item \label{ref:plotly} Plotly Python Graphing Library --- Network Graphs. \url{https://plotly.com/python/network-graphs/}
+    \item \label{ref:networkx} NetworkX: Network Analysis in Python. \url{https://networkx.org/}
+    \item \label{ref:sbert_lib} Sentence-Transformers Documentation. \url{https://www.sbert.net/}
 \end{enumerate}
-
 
 % NOTE: LaTeX does have a built-in way of generating references automatically,
 % but it's a bit tricky to use so you are allowed to write your references manually
