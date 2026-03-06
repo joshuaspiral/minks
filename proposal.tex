@@ -4,6 +4,8 @@
 \usepackage[margin=0.75in]{geometry}
 \usepackage{hyperref}
 
+\bibliographystyle{ieeetr}
+
 \title{CSC111 Project Proposal: }
 \author{Caellum Yip Hoi-Lee, Catherine Abdul-Samad, Michael Chen, Joshua Yeung}
 \date{\today}
@@ -52,7 +54,7 @@ $$
 A(u, v) = \sum_{w \in \Gamma(u) \cap \Gamma(v)} \frac{1}{\log |\Gamma(w)|}
 $$
 
-This captures the intuition that a rare mutual connection is more informative than a highly connected hub vertex \cite{adamic}. In a knowledge graph, a shared neighbour that is a highly specific concept (low degree) is stronger evidence for a missing link than a shared neighbour that is a broad hub note linking to everything.
+This captures the intuition that a rare mutual connection is more informative than a highly connected hub vertex \cite{adamic2003}. In a knowledge graph, a shared neighbour that is a highly specific concept (low degree) is stronger evidence for a missing link than a shared neighbour that is a broad hub note linking to everything.
  
 https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.link\_prediction.adamic\_adar\_index.html
 https://www.geeksforgeeks.org/python/link-prediction-predict-edges-in-a-network-using-networkx/
@@ -95,17 +97,7 @@ Once our code has finished computing the link predictions, we plan to pipe our g
 \subsubsection{Plotly}
 Once the 2D coordinates have been generated through NetworkX, 
 
-\section*{References}
-\begin{enumerate}
-
-    \item \label{ref:obsidian} Obsidian. \textit{Obsidian --- Sharpen your thinking}. \url{https://obsidian.md/}. Accessed 27 Feb.\ 2026.
-    \item \label{ref:adamic} Adamic, L.\ A.\ \& Adar, E. (2003). Friends and neighbors on the Web. \textit{Social Networks}, 25(3), 211--230. \url{https://doi.org/10.1016/S0378-8733(03)00009-1}
-    \item \label{ref:reimers} Reimers, N.\ \& Gurevych, I. (2019). Sentence-BERT: Sentence Embeddings using Siamese BERT-Networks. \textit{Proceedings of the 2019 Conference on Empirical Methods in Natural Language Processing (EMNLP-IJCNLP)}, 3982--3992. \url{https://doi.org/10.18653/v1/D19-1410}
-    \item \label{ref:plotly} Plotly Python Graphing Library --- Network Graphs. \url{https://plotly.com/python/network-graphs/}
-    \item \label{ref:networkx} NetworkX: Network Analysis in Python. \url{https://networkx.org/}
-    \item \label{ref:sbert_lib} Sentence-Transformers Documentation. \url{https://www.sbert.net/}
-
-\end{enumerate}
+\bibliography{references}
 
 % NOTE: LaTeX does have a built-in way of generating references automatically,
 % but it's a bit tricky to use so you are allowed to write your references manually
