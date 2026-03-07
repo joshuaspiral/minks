@@ -25,7 +25,7 @@ Personal knowledge management (PKM) tools such as Obsidian(\cite{obsidian}) impl
 
 \section*{Computational Plan}
 \subsection*{Data Representation}
-We will model an Obsidian vault as an undirected graph, $G = (V, E)$, where each Markdown note is a vertex $v \in V$ and each WikiLink between two notes is an edge $\{u, v\} \in E$. Despite graphs with WikiLinks syntactically being a directed graphs (a note titled "Graphs" would link to "Vertex" but not necessarily vice versa) we will represent the graph with an undirected graph, since for the purposes of link prediction(\cite {gfg_linkprediction}), we care about the \textit{existence} of a relationship between two vertices, not its direction.
+We will model an Obsidian vault as an undirected graph, $G = (V, E)$, where each Markdown note is a vertex $v \in V$ and each WikiLink between two notes is an edge $\{u, v\} \in E$. Despite graphs with WikiLinks syntactically being a directed graph (a note titled "Graphs" would link to "Vertex" but not necessarily vice versa) we will represent the graph with an undirected graph, since for the purposes of link prediction(\cite {gfg_linkprediction}), we care about the \textit{existence} of a relationship between two vertices, not its direction.
 
 \noindent Each vertex $v$ will store the following instance attributes:
 \begin{itemize}
@@ -56,7 +56,7 @@ Target that provides:
 \end{quote}
 
 
-\noindent Before constructing the graph, we will need to process the notes via a cleaning pipeline: stripping image embeddings, removing YAML frontmatter, removing tags, extracting all WikiLinkns, and extracting the remaining plaintex body for NLP-based semantic similarity.
+\noindent Before constructing the graph, we will need to process the notes via a cleaning pipeline: stripping image embeddings, removing YAML frontmatter, removing tags, extracting all WikiLinks, and extracting the remaining plaintext body for NLP-based semantic similarity.
 
 \subsection*{Computations}
 We plan to implement link predictions in three stages. At each stage, we will tweak a similarity signal and evaluate how the predictions change. Hopefully we will be able to deduce how different similarity signals affect the judgements made by the algorithm. Each function returns a float between $0$ and $1$ with larger numbers representing higher similarity.
@@ -73,7 +73,7 @@ where $\Gamma(u)$ represents the set of neighbours of $u$. This captures the int
 The Adamic-Adar index is a weighted version of common-neighbour counting, assigning higher weight to shared neighbours with fewer connections: 
 
 $$
-A(u, v) = \sum_{w \in \Gamma(u) \cap \Gamma(v)} \frac{1}{\log |\Gamma(w)|}\\
+A(u, v) = \sum_{w \in \Gamma(u) \cap \Gamma(v)} \frac{1}{\log |\Gamma(w)|}
 $$
 
 \noindent This captures the intuition that a rare mutual connection is more informative than a highly connected hub vertex \cite{adamic2003}. In a knowledge graph, a shared neighbour that is a highly specific concept (low degree) is stronger evidence for a missing link than a shared neighbour that is a broad hub note linking to everything.
@@ -85,12 +85,13 @@ Structural methods can only detect similarity between notes that already share n
 \noindent We will use Sentence-BERT encoding since embedding 10,000 sentences takes seconds rather than the 65 hours required by vanilla BERT \cite{reimers2019}, which is vital to ensuring that the algorithm can feasibly run on large vaults. \texttt{sentence-transformers} provides the \texttt{SentenceTransformer} class with an \texttt{encode()} method that accepts a list of strings and returns a NumPy array of embedding vectors, and we will use\\ \texttt{sklearn.metrics.pairwise.cosine\_similarity} to compute the similarity matrix.
 
 \subsubsection*{Stage 4: Combined score}
-Finally, we will compute a weighted combination of the structural score (the maximum of the normalized Jaccard and Adamic-Adar scores) and the semantic similarity score. This combined score ranks all non-adjacent vertex pairs and produces the final set of link predictions.
+Finally, we will compute a weighted combination of the structural score (the maximum of the normalized Jaccard and Adamic-Adar scores) and the semantic similarity score. The optimal weights for this combination will be determined by evaluating different ratios for the quality of link predictions they produce and making modifications as necessary. This combined score ranks all non-adjacent vertex pairs and produces the final set of link predictions. 
 
 \subsubsection*{Evaluation via edge holdout.}
 To evaluate the quality of the algorithm's link predictions, we can employ both qualitative and quantitative methods.
 
-\noindent Qualitatively, we can see if the missing links make sense and are non-trivial (a trivial link would be "CSC111.md" to "CSC111 Syllabus.md"). To quantitatively evaluate prediction quality, we will use an edge holdout method(\cite{gfg_holdout}): we randomly remove 20\% of existing edges from $G$, run the full prediction pipeline on the reduced graph, and measure the fraction of held-out edges that appear in the top-$k$ predictions (recall@$k$). We acknowledge a limitation: random removal may disproportionately remove structurally important edges, which we will address by averaging results over multiple random holdout trials. We may also experiment with the calculation and preservation of the spanning forest to avoid removing fundametal edges and accidentally isolating entire portions of the graph on holdout removal.
+\noindent Qualitatively, we can see if the missing links make sense and are non-trivial (a trivial link would be "CSC111.md" to "CSC111 Syllabus.md"). We recognize that the algorithm may discover meaningful links that were not present in the original graph; we will review these predictions on a case-by-case basis to analyze the algorithm's judgement.
+To quantitatively evaluate prediction quality, we will use an edge holdout method(\cite{gfg_holdout}): we randomly remove 20\% of existing edges from $G$, run the full prediction pipeline on the reduced graph, and measure the fraction of held-out edges that appear in the top-$k$ predictions (recall@$k$). We acknowledge a limitation: random removal may disproportionately remove structurally important edges, which we will address by averaging results over multiple random holdout trials. We may also experiment with the calculation and intentional preservation of the graph's spanning forest to avoid removing fundamental edges and accidentally isolating entire portions of the graph.
 
 \subsubsection*{Graph statistics.}
 We will also compute degree centrality per vertex to identify hub notes, and run connected-component analysis to detect isolated clusters. Comparing these statistics before and after applying the predicted links will illustrate how the predictions affect the overall structure and connectivity of the knowledge graph.
@@ -100,7 +101,7 @@ We will also compute degree centrality per vertex to identify hub notes, and run
 Interactive, graph-based visualisation of notes is a crucial component of PKM systems such as Obsidian. To plot user notes in an intuitive way, we plan to implement a pipeline that decouples the graph calculation algorithms from visualization and uses the \textbf{NetworkX}(\cite{networkx}) and \textbf{Plotly}(\cite{plotly}) libraries. 
 
 \subsubsection*{NetworkX} 
-Our core graph algorithms will not use NetworkX. The identifaction of missing links and graph/vertex classes will be written entirely by us, resulting in a custom graph class that handles these computations. We plan to employ NetworkX's force-directed algorithms to build an optimized visualization from this class. \\
+Our core graph algorithms will not use NetworkX. The identification of missing links and graph/vertex classes will be written entirely by us, resulting in a custom graph class that handles these computations. We plan to employ NetworkX's force-directed algorithms to build an optimized visualization from this class. \\
 
 \noindent Once our code has finished computing the link predictions, we plan to pipe our graph topology to a NetworkX \texttt{networkx.Graph} object. We would pass this object to the \texttt{networkx.spring\_layout()} function, which treats edges as springs that pull notes together and vertices as magnets that repel. The function runs this physics simulation and outputs the calculated 2D coordinates of each node. 
 
