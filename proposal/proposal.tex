@@ -39,13 +39,14 @@ We will model an Obsidian vault as an undirected graph, $G = (V, E)$, where each
 \noindent Before constructing the graph, we will need to process the notes via a cleaning pipeline: stripping image embeddings, removing YAML frontmatter, removing tags, extracting all WikiLinkns, and extracting the remaining plaintex body for NLP-based semantic similarity.
 
 \subsection*{Computations}
-We plan to implement link predictions in three stages. At each stage, we will tweak a similarity signal and evaluate how the predictions change. Hopefully we will be able to deduce how different similarity signals affect the judgements made by the algorithm. 
+We plan to implement link predictions in three stages. At each stage, we will tweak a similarity signal and evaluate how the predictions change. Hopefully we will be able to deduce how different similarity signals affect the judgements made by the algorithm. Each function returns a float between $0$ and $1$ with larger numbers representing higher similarity.
 
 \subsubsection*{Stage 1: Structural similarity (Jaccard)}
 For each pair of non-adjacent vertices $(u,v)$, we can compute the Jaccard index over their neighbour sets:
 $$
 J(u,v) = \frac{|\Gamma(u) \cap \Gamma(v)|}{|\Gamma(u) \cup \Gamma(v)|}
 $$
+
 where $\Gamma(u)$ represents the set of neighbours of $u$. This captures the intuitive idea regarding structural similarity: if two notes share many common neighbours, then they are likely related.
 
 \subsubsection*{Stage 2: **Weighted** structural similarity (Adamic-Adar)}
