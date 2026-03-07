@@ -16,27 +16,27 @@
 
 \section*{Problem Description and Research Question}
 
-Personal knowledge management (PKM) tools such as Obsidian implement the Zettelkasten methodology, allowing users to organize their knowledge as a network of interlinked Markdown notes. A note in the network can link to other notes in the network through internal links called "WikiLinks", forming a graph where the notes are vertices and the links are edges. The benefit of such a system lies in its ability to provide users with insights into the relationship between ideas, and build a stronger understanding of their notes. However, many users (including ourselves), tend to under-link their notes, leading to a lackluster knowledge network. For example, one of the ways one of our group members uses Obsidian is through a "hub-and-spoke" structure, where minimal note vertices known as "hubs" form a directory with WikiLinks to other notes in the same topic (e.g. a hub named "CSC111.md" with WikiLinks to ("Tree.md", "Recursion.md", etc.). This however, defeats the purpose of Obsidian, failing to capture the lateral connections notes can have in the network which actually make a knowledge graph useful. For instance, a link from "Trees.md" to "Abstract Syntax Trees (CS).md" to "Abstract Syntax Trees (Linguistics).md".
+Personal knowledge management (PKM) tools such as Obsidian(\cite{obsidian}) implement the Zettelkasten methodology, allowing users to organize their knowledge as a network of interlinked Markdown notes. A note in the network can link to other notes in the network through internal links called "WikiLinks", forming a graph where the notes are vertices and the links are edges. The benefit of such a system lies in its ability to provide users with insights into the relationship between ideas, and build a stronger understanding of their notes. However, many users (including ourselves), tend to under-link their notes, leading to a lackluster knowledge network. For example, one of the ways one of our group members uses Obsidian is through a "hub-and-spoke" structure, where minimal note vertices known as "hubs" form a directory with WikiLinks to other notes in the same topic (e.g. a hub named "CSC111.md" with WikiLinks to ("Tree.md", "Recursion.md", etc.). This however, defeats the purpose of Obsidian, failing to capture the lateral connections notes can have in the network which actually make a knowledge graph useful. For instance, a link from "Trees.md" to "Abstract Syntax Trees (CS).md" to "Abstract Syntax Trees (Linguistics).md".\\
 
-Whilst manually reviewing every note to add missing links is a valuable learning activity, it becomes highly impractical as a PKM system grows to hundreds or thousands of notes.
+\noindent Whilst manually reviewing every note to add missing links is a valuable learning activity, it becomes highly impractical as a PKM system grows to hundreds or thousands of notes.
 
 \subsection*{Research Question}
 \textbf{"Can we use graph-based link prediction algorithms augmented with NLP-based semantic similarity to suggest meaningful missing connections in an Obsidian knowledge graph, and how do the algorithms' judgements compare with a user's own judgement of which notes should be linked?"}
 
 \section*{Computational Plan}
 \subsection*{Data Representation}
-We will model an Obsidian vault as an undirected graph, $G = (V, E)$, where each Markdown note is a vertex $v \in V$ and each WikiLink between two notes is an edge $\{u, v\} \in E$. Despite graphs with WikiLinks syntactically being a directed graphs (a note titled "Graphs" would link to "Vertex" but not necessarily vice versa) we will represent the graph with an undirected graph, since for the purposes of link prediction, we care about the \textit{existence} of a relationship between two vertices, not its direction.
+We will model an Obsidian vault as an undirected graph, $G = (V, E)$, where each Markdown note is a vertex $v \in V$ and each WikiLink between two notes is an edge $\{u, v\} \in E$. Despite graphs with WikiLinks syntactically being a directed graphs (a note titled "Graphs" would link to "Vertex" but not necessarily vice versa) we will represent the graph with an undirected graph, since for the purposes of link prediction(\cite {gfg_linkprediction}), we care about the \textit{existence} of a relationship between two vertices, not its direction.
 
-Each vertex $v$ will store the following instance attributes:
+\noindent Each vertex $v$ will store the following instance attributes:
 \begin{itemize}
     \item \texttt{note\_name}: the filename without the .md extension
     \item \texttt{note\_content}: the plaintext body after processing
 \end{itemize}
 
 
-We will use two datasets for our evaluation. The first is one of our group members' personal Obsidian vaults, used mainly in notetaking for course notes. The second is the open source \textit{digital garden} of Jacky Zhao (\url{jzhao.xyz}). Zhao's vault contains over 700 notes spanning computer science, philosophy and other topics, providing a denser and more diverse graph than our personal vault alone. Two datasets are used to allow us to test whether our pipeline generalizes beyond small, topic-narrow vaults.
+\noindent We will use two datasets for our evaluation. The first is one of our group members' personal Obsidian vaults, used mainly in notetaking for course notes. The second is the open source \textit{digital garden} of Jacky Zhao (\url{jzhao.xyz}). Zhao's vault contains over 700 notes spanning computer science, philosophy and other topics, providing a denser and more diverse graph than our personal vault alone. Two datasets are used to allow us to test whether our pipeline generalizes beyond small, topic-narrow vaults.\\
 
-Before constructing the graph, we will need to process the notes via a cleaning pipeline: stripping image embeddings, removing YAML frontmatter, removing tags, extracting all WikiLinkns, and extracting the remaining plaintex body for NLP-based semantic similarity.
+\noindent Before constructing the graph, we will need to process the notes via a cleaning pipeline: stripping image embeddings, removing YAML frontmatter, removing tags, extracting all WikiLinkns, and extracting the remaining plaintex body for NLP-based semantic similarity.
 
 \subsection*{Computations}
 We plan to implement link predictions in three stages. At each stage, we will tweak a similarity signal and evaluate how the predictions change. Hopefully we will be able to deduce how different similarity signals affect the judgements made by the algorithm. 
@@ -52,51 +52,43 @@ where $\Gamma(u)$ represents the set of neighbours of $u$. This captures the int
 The Adamic-Adar index is a weighted version of common-neighbour counting, assigning higher weight to shared neighbours with fewer connections: 
 
 $$
-A(u, v) = \sum_{w \in \Gamma(u) \cap \Gamma(v)} \frac{1}{\log |\Gamma(w)|}
+A(u, v) = \sum_{w \in \Gamma(u) \cap \Gamma(v)} \frac{1}{\log |\Gamma(w)|}\\
 $$
 
-This captures the intuition that a rare mutual connection is more informative than a highly connected hub vertex \cite{adamic2003}. In a knowledge graph, a shared neighbour that is a highly specific concept (low degree) is stronger evidence for a missing link than a shared neighbour that is a broad hub note linking to everything.
+\noindent This captures the intuition that a rare mutual connection is more informative than a highly connected hub vertex \cite{adamic2003}. In a knowledge graph, a shared neighbour that is a highly specific concept (low degree) is stronger evidence for a missing link than a shared neighbour that is a broad hub note linking to everything.
  
 
 \subsubsection*{Stage 3: Semantic similarity (Sentence-BERT)}
-Structural methods can only detect similarity between notes that already share neighbours, which is an issue considering the original user's problem: the lack of lateral connections. To capture relationships between structurally disconnected but semantically related notes, we will generate sentence embeddings for each note's plaintext body using the \texttt{sentence-transformers} library with the \texttt{all-MiniLM-L6-v2} model \cite{reimers2019}. This model maps text to 384-dimensional vectors. We will then compute cosine similarity between all embedding pairs. 
+Structural methods can only detect similarity between notes that already share neighbours, which is an issue considering the original user's problem: the lack of lateral connections. To capture relationships between structurally disconnected but semantically related notes, we will generate sentence embeddings for each note's plaintext body using the \texttt{sentence-transformers} library with the \texttt{all-MiniLM-L6-v2} model \cite{reimers2019}. This model maps text to 384-dimensional vectors. We will then compute cosine similarity between all embedding pairs. \\
 
-We will use Sentence-BERT encoding since embedding 10,000 sentences takes seconds rather than the 65 hours required by vanilla BERT \cite{reimers2019}, which is vital to ensuring that the algorithm can feasibly run on large vaults. \texttt{sentence-transformers} provides the \texttt{SentenceTransformer} class with an \texttt{encode()} method that accepts a list of strings and returns a NumPy array of embedding vectors, and we will use \texttt{sklearn.metrics.pairwise.cosine\_similarity} to compute the similarity matrix.
+\noindent We will use Sentence-BERT encoding since embedding 10,000 sentences takes seconds rather than the 65 hours required by vanilla BERT \cite{reimers2019}, which is vital to ensuring that the algorithm can feasibly run on large vaults. \texttt{sentence-transformers} provides the \texttt{SentenceTransformer} class with an \texttt{encode()} method that accepts a list of strings and returns a NumPy array of embedding vectors, and we will use\\ \texttt{sklearn.metrics.pairwise.cosine\_similarity} to compute the similarity matrix.
 
 \subsubsection*{Stage 4: Combined score}
 Finally, we will compute a weighted combination of the structural score (the maximum of the normalized Jaccard and Adamic-Adar scores) and the semantic similarity score. This combined score ranks all non-adjacent vertex pairs and produces the final set of link predictions.
 
 \subsubsection*{Evaluation via edge holdout.}
 \#todo refine this section
-Evaluating whether or not the algoirthm produced a "good judgement" of what missing links should be added, we can do so quantiatively and qualitatively. 
+Evaluating whether or not the algoirthm produced a "good judgement" of what missing links should be added, we can do so quantiatively and qualitatively. \\
 
-Qualitatively, we can see if the missing links make sense and are non-trivial (a trivial link would be "CSC111.md" to "CSC111 Syllabus.md").
-
-To quantitatively evaluate prediction quality, we will use an edge holdout method: we randomly remove 20\% of existing edges from $G$, run the full prediction pipeline on the reduced graph, and measure the fraction of held-out edges that appear in the top-$k$ predictions (recall@$k$). We acknowledge a limitation: random removal may disproportionately remove structurally important edges, which we will address by averaging results over multiple random holdout trials.
+\noindent Qualitatively, we can see if the missing links make sense and are non-trivial (a trivial link would be "CSC111.md" to "CSC111 Syllabus.md"). To quantitatively evaluate prediction quality, we will use an edge holdout method(\cite{gfg_holdout}): we randomly remove 20\% of existing edges from $G$, run the full prediction pipeline on the reduced graph, and measure the fraction of held-out edges that appear in the top-$k$ predictions (recall@$k$). We acknowledge a limitation: random removal may disproportionately remove structurally important edges, which we will address by averaging results over multiple random holdout trials.
 
 \subsubsection*{Graph statistics.}
 We will also compute degree centrality per vertex to identify hub notes, and run connected-component analysis to detect isolated clusters. Comparing these statistics before and after applying the predicted links will illustrate how the predictions affect the overall structure and connectivity of the knowledge graph.
 
 \subsection*{Visualisation}
 
-Interactive, graph-based visualisation of notes is a crucial component of PKM systems such as Obsidian. To plot user notes in an intuitive way, we plan to implement a pipeline that decouples the graph calculation algorithms from visualization. We plan to use the \textbf{NetworkX} and \textbf{Plotly} libraries to accomplish this goal. 
+Interactive, graph-based visualisation of notes is a crucial component of PKM systems such as Obsidian. To plot user notes in an intuitive way, we plan to implement a pipeline that decouples the graph calculation algorithms from visualization. We plan to use the \textbf{NetworkX}(\cite{networkx}) and \textbf{Plotly}(\cite{plotly}) libraries to accomplish this goal. 
 
 
-\subsubsection*{NetworkX}
-Our core graph algorithms will not use NetworkX. The identifaction of missing links and graph/vertex classes will be written entirely by us, resulting in a custom graph class that handles these computations. However, calculating a visually pleasing, untangled layout of the nodes in this graph involves complex physics-based calculations. We plan to employ NetworkX's force-directed algorithms to build an optimized visualization. 
+\subsubsection*{NetworkX} 
+Our core graph algorithms will not use NetworkX. The identifaction of missing links and graph/vertex classes will be written entirely by us, resulting in a custom graph class that handles these computations. However, calculating a visually pleasing, untangled layout of the nodes in this graph involves complex physics-based calculations. We plan to employ NetworkX's force-directed algorithms to build an optimized visualization. \\
 
-Once our code has finished computing the link predictions, we plan to pipe our graph topology to a NetworkX \texttt{networkx.Graph} object. We will then pass this object to the \texttt{networkx.spring\_layout()} function. This function treats the graph as a physical system, treating edges as springs that pull notes together and vertices as magnets that repel each other. The function runs this physics simulation and outputs the calculated 2D coordinates of each node. 
+\noindent Once our code has finished computing the link predictions, we plan to pipe our graph topology to a NetworkX \texttt{networkx.Graph} object. We will then pass this object to the \texttt{networkx.spring\_layout()} function. This function treats the graph as a physical system, treating edges as springs that pull notes together and vertices as magnets that repel each other. The function runs this physics simulation and outputs the calculated 2D coordinates of each node. 
 
 \subsubsection*{Plotly}
-Once the 2D coordinates have been generated through the NetworkX simulation, we plan to feed the generated coordinates into (\texttt{plotly.graph\_objects}) to plot the nodes in an interactive visualization.
+Once the 2D coordinates have been generated through the NetworkX simulation, we plan to feed the generated coordinates into (\texttt{plotly.graph\_objects}) to plot the nodes in an interactive visualization.\\
 
-We will then iterate through our custom graph's edges to draw visual edges using \texttt{go.Scatter} and \texttt{mode='lines'}. By adjusting the edge's \texttt{line} styling (such as color and width), we can visually distinguish between pre-existing WikiLinks and our algorithm's newly predicted links. A potential feature is the use of distinct colors to represent the confidence levels of predictions generated by our pipeline (i.e green edges for high-confidence, red edges for low).
-
-
-\subsubsection*{Potential Application of Clustering During Visualization}
-A potential feature for our visualization pipeline is the implementation of visual clustering based on the graph statistics computed in our earlier stages. By utilizing the results of connected-component analysis, we could identify distinct topics within the user's Obsidian vault. We could then incorporate these islands in the Plotly visualization to group certain topics together.
-
-
+\noindent We will then iterate through our custom graph's edges to draw visual edges using \texttt{go.Scatter} and \texttt{mode='lines'}. By adjusting the edge's \texttt{line} styling (such as color and width), we can visually distinguish between pre-existing WikiLinks and our algorithm's newly predicted links. A potential feature is the use of distinct colors to represent the confidence levels of predictions generated by our pipeline (i.e green edges for high-confidence, red edges for low).
 
 \bibliography{references}
 
