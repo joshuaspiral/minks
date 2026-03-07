@@ -7,7 +7,7 @@
 \bibliographystyle{ieeetr}
 \nocite{*}
 
-\title{CSC111 Project Proposal: }
+\title{CSC111 Project Proposal: Minks}
 \author{Caellum Yip Hoi-Lee, Catherine Abdul-Samad, Michael Chen, Joshua Yeung}
 \date{\today}
 
@@ -16,7 +16,7 @@
 
 \section*{Problem Description and Research Question}
 
-Personal knowledge management (PKM) tools such as Obsidian(\cite{obsidian}) implement the Zettelkasten methodology(\cite {zettelkasten_method}), allowing users to organize their knowledge as a network of interlinked Markdown notes. A note in the network can link to other notes in the network through internal links called "WikiLinks", forming a graph where the notes are vertices and the links are edges. The benefit of such a system lies in its ability to provide users with insights into the relationship between ideas, and build a stronger understanding of their notes. However, many users (including ourselves), tend to under-link their notes, leading to a lackluster knowledge network. For example, one of the ways one of our group members uses Obsidian is through a "hub-and-spoke" structure, where minimal note vertices known as "hubs" form a directory with WikiLinks to other notes in the same topic (e.g. a hub named "CSC111.md" with WikiLinks to ("Tree.md", "Recursion.md", etc.). This however, defeats the purpose of Obsidian, failing to capture the lateral connections notes can have in the network which actually make a knowledge graph useful. For instance, a link from "Trees.md" to "Abstract Syntax Trees (CS).md" to "Abstract Syntax Trees (Linguistics).md".\\
+Personal knowledge management (PKM) tools such as Obsidian(\cite{obsidian}) implement the Zettelkasten methodology(\cite {zettelkasten_method}), allowing users to organize their knowledge as a network of interlinked Markdown notes. A note in the network can link to other notes in the network through internal links called "WikiLinks", forming a graph where the notes are vertices and the links are edges. The benefit of such a system lies in its ability to provide users with insights into the relationship between ideas, and build a stronger understanding of their notes. However, many users (including ourselves), tend to under-link their notes, leading to a lackluster knowledge network. For example, one of the ways one of our group members uses Obsidian is through a "hub-and-spoke" structure, where minimal note vertices known as "hubs" form a directory with WikiLinks to other notes in the same topic (e.g. a hub named "CSC111.md" with WikiLinks to ("Tree.md", "Recursion.md", etc.)). This however, defeats the purpose of Obsidian, failing to capture the lateral connections notes can have in the network which actually make a knowledge graph useful. For instance, a link from "Trees.md" to "Abstract Syntax Trees (CS).md" to "Abstract Syntax Trees (Linguistics).md".\\
 
 \noindent Whilst manually reviewing every note to add missing links is a valuable learning activity, it becomes highly impractical as a PKM system grows to hundreds or thousands of notes.
 
@@ -43,7 +43,7 @@ We will model an Obsidian vault as an undirected graph, $G = (V, E)$, where each
 
 #seed
 
-Device-mapper is a Linux kernel framework that maps virtual block 
+Device-mapper is a [[Linux kernel]] framework that maps virtual block 
 devices to physical storage.
 
 Targets in device-mapper are plugins that define how device-mapper 
@@ -51,7 +51,7 @@ handles IO for a region of a virtual block device.
 
 ## `thin-pool`
 Target that provides:
-1. thin provisioning: you can create virtual block devices...
+1. [[thin provisioning]]: you can create virtual block devices...
 \end{verbatim}
 \end{quote}
 
@@ -82,7 +82,7 @@ $$
 \subsubsection*{Stage 3: Semantic similarity (Sentence-BERT)}
 Structural methods can only detect similarity between notes that already share neighbours, which is an issue considering the original user's problem: the lack of lateral connections. To capture relationships between structurally disconnected but semantically related notes, we will generate sentence embeddings for each note's plaintext body using the \texttt{sentence-transformers} library with the \texttt{all-MiniLM-L6-v2} model \cite{reimers2019}. This model maps text to 384-dimensional vectors. We will then compute cosine similarity between all embedding pairs. \\
 
-\noindent We will use Sentence-BERT encoding since embedding 10,000 sentences takes seconds rather than the 65 hours required by vanilla BERT \cite{reimers2019}, which is vital to ensuring that the algorithm can feasibly run on large vaults. \texttt{sentence-transformers} provides the \texttt{SentenceTransformer} class with an \texttt{encode()} method that accepts a list of strings and returns a NumPy array of embedding vectors, and we will use\\ \texttt{sklearn.metrics.pairwise.cosine\_similarity} to compute the similarity matrix.
+\noindent We will use Sentence-BERT encoding since embedding 10,000 sentences takes seconds rather than the 65 hours required by vanilla BERT \cite{reimers2019}, which is vital to ensuring that the algorithm can feasibly run on large vaults. \texttt{sentence-transformers} provides the \texttt{SentenceTransformer} class with an \texttt{encode()} method that accepts a list of strings and returns a NumPy array of embedding vectors, and we will use \texttt{sklearn.metrics.pairwise.cosine\_similarity} to compute the similarity matrix.
 
 \subsubsection*{Stage 4: Combined score}
 Finally, we will compute a weighted combination of the structural score (the maximum of the normalized Jaccard and Adamic-Adar scores) and the semantic similarity score. The optimal weights for this combination will be determined by evaluating different ratios for the quality of link predictions they produce and making modifications as necessary. This combined score ranks all non-adjacent vertex pairs and produces the final set of link predictions. 
