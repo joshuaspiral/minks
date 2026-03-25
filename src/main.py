@@ -1,29 +1,22 @@
 import os
-import sys
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-
-from graph import KnowledgeGraph, load_vault
+from graph import KnowledgeGraph
+from load_graph import load_vault
 from predictor import MinkPredictor
 from visualise import graph_viz, layout_comparison
 
 K = 10
-OUTPUT = os.path.join(os.path.dirname(os.path.dirname(__file__)), "output")
+OUTPUT = "output"
 os.makedirs(OUTPUT, exist_ok=True)
 
-
-def print_section(title: str):
-    print(f"\n{'='*60}\n  {title}\n{'='*60}")
-
-
 def main():
-    print_section("1. Loading vaults")
+    print("1. Loading vaults")
     vault_a = load_vault("vaults/vault_a")
     vault_b = load_vault("vaults/vault_b")
     print(f"  vault_a: {vault_a}")
     print(f"  vault_b: {vault_b}")
 
-    print_section("2. Fitting weights on vault_a (tuning set)")
+    print("2. Fitting weights on vault_a (tuning set)")
     predictor = MinkPredictor()
     fit_results = predictor.fit(vault_a, k=K, holdout_frac=0.2, n_trials=5, steps=5)
 
@@ -38,7 +31,7 @@ def main():
             f"{row['recall@k']:>10.4f}  {row['precision@k']:>13.4f}{marker}"
         )
 
-    print_section("3. Evaluating on vault_b (test set)")
+    print("3. Evaluating on vault_b (test set)")
     print(f"  Fixed weights: w_struct={predictor.w_struct}, w_sem={predictor.w_sem}")
 
     embeddings_b = predictor._compute_embeddings(vault_b)
@@ -60,14 +53,14 @@ def main():
         + ", ".join(f"{p:.3f}" for p in eval_results["per_trial_precision"])
     )
 
-    print_section("4. Predicting top-k links for vault_b")
+    print("4. Predicting top-k links for vault_b")
     predictions = predictor.predict(vault_b, k=K, embeddings=embeddings_b)
     print(f"\n  {'Rank':>4}  {'u':28} {'v':28}  {'score':>7}")
     print("  " + "-" * 76)
     for rank, (u, v, score) in enumerate(predictions, 1):
         print(f"  {rank:>4}  {u:28} {v:28}  {score:.4f}")
 
-    print_section("5. Graph statistics (vault_b)")
+    print("5. Graph statistics (vault_b)")
     top_hubs = sorted(
         vault_b.degree_centrality().items(), key=lambda x: x[1], reverse=True
     )[:5]
@@ -81,7 +74,7 @@ def main():
     )
     print(f"  edges:      {len(vault_b.edges)} → {len(vault_b_aug.edges)}")
 
-    print_section("6. Generating visualisations")
+    print("6. Generating visualisations")
     graph_viz(
         vault_b_aug,
         predictions,
@@ -94,10 +87,9 @@ def main():
         output_path=os.path.join(OUTPUT, "layout_comparison.html"),
     )
 
-    print_section("Done")
+    print("Done")
     print(f"  Output written to: {OUTPUT}/")
 
 
 if __name__ == "__main__":
-    os.chdir(os.path.dirname(os.path.dirname(__file__)))
     main()
