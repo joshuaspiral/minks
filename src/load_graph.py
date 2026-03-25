@@ -2,7 +2,6 @@
 
 import re
 import os
-from typing import Optional
 
 from graph import KnowledgeGraph
 
@@ -31,25 +30,26 @@ def _parse(raw: str):
 def load_vault(vault_path: str) -> KnowledgeGraph:
     """TODO: DOCSTRING"""
     graph = KnowledgeGraph()
+    note_links: dict[str, list[str]] = {} # stores raw link names per note
 
     # load all notes
     for file_name in os.listdir(vault_path):
-        # skip anything that isn't a markdown file
         if not file_name.endswith('.md'):
             continue
 
         with open(os.path.join(vault_path, file_name)) as file:
             raw = file.read()
 
+        content, links = _parse(raw)
         name = file_name[:-3]
-        graph.add_note(name)
+        graph.add_note(name, content)
+        note_links[name] = links
 
-    # create links between notes
+    # Add edges only between notes that actually exist in the vault
     note_names = graph.get_all_note_names()
-
-    for note in note_names:
-        neighbours = graph.get_neighbours(note)
-        for neighbour in neighbours:
-            graph.add_link(note, neighbour)
+    for note, links in note_links.items():
+        for neighbour in links:
+            if neighbour in note_names:
+                graph.add_link(note, neighbour)
 
     return graph
