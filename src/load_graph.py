@@ -4,7 +4,7 @@ import re
 import os
 from typing import Optional
 
-from new_graph import KnowledgeGraph
+from graph import KnowledgeGraph
 
 def _parse(raw: str):
     """TODO: DOCSTRING"""
