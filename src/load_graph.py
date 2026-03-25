@@ -32,19 +32,24 @@ def load_vault(vault_path: str) -> KnowledgeGraph:
     """TODO: DOCSTRING"""
     graph = KnowledgeGraph()
 
+    # load all notes
     for file_name in os.listdir(vault_path):
         # skip anything that isn't a markdown file
         if not file_name.endswith('.md'):
             continue
 
-        name = file_name[:-3]
-
         with open(os.path.join(vault_path, file_name)) as file:
             raw = file.read()
 
+        name = file_name[:-3]
         graph.add_note(name)
 
-    for note in graph._notes.values():
-        for
+    # create links between notes
+    note_names = graph.get_all_note_names()
+
+    for note in note_names:
+        neighbours = graph.get_neighbours(note)
+        for neighbour in neighbours:
+            graph.add_link(note, neighbour)
 
     return graph
