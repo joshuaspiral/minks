@@ -1,4 +1,16 @@
-"""TODO: DOCSTRING"""
+"""Utilities for loading an Obsidian vault into a KnowledgeGraph.
+
+This module provides functionality for parsing Markdown notes from an Obsidian vault and
+constructing a KnowledgeGraph representing the vault's structure.
+Each note becomes a vertex in the graph, and wiki-style links (e.g., [[Note Name]]) between notes become edges.
+
+Functions:
+    _parse:
+        Cleans raw Markdown note content and extracts internal note links.
+
+    load_vault:
+        Reads all Markdown files in a vault directory and builds a KnowledgeGraph containing the notes and their links.
+"""
 
 import re
 import os
