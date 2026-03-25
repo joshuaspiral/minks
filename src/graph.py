@@ -40,7 +40,7 @@ class _Note:
         self.content = content
         self.links = set()
 
-    def degree(self) -> int:
+    def get_degree(self) -> int:
         """Return the degree of this note."""
         return len(self.links)
 

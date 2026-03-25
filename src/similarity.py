@@ -22,7 +22,7 @@ def adamic_adar(g: "KnowledgeGraph", u: str, v: str) -> float:
     """
     score = 0.0
     for w in g.get_neighbours(u) & g.get_neighbours(v):
-        deg = g.get_note(w).degree()
+        deg = g.get_note(w).get_degree()
         if deg > 1:
             score += 1.0 / math.log(deg)
     return score
@@ -67,6 +67,12 @@ def cosine_similarity(a: list[float], b: list[float]) -> float:
 
 
 class SentenceBERTEmbedder:
+    """
+    Encodes note text into embedidng vectors for similarity computations.
+
+    Attempts to use Sentence-BERT to encode, but if the library is unavailable
+    or the model cannot be loaded, then falls back to TF-IDF vectors computed using standard libraries only.
+    """
     MODEL_NAME = "all-MiniLM-L6-v2"
 
     def __init__(self):
@@ -88,18 +94,26 @@ class SentenceBERTEmbedder:
     def _tokenize(text: str) -> list[str]:
         return re.findall(r"[a-z]+", text.lower())
 
-    def _fit_idf(self, corpus: list[str]):
-        N = len(corpus)
-        df: dict[str, int] = {}
-        for doc in corpus:
-            for tok in set(self._tokenize(doc)):
-                df[tok] = df.get(tok, 0) + 1
+    def fit(self, note_texts: list[str]) -> None:
+        """
+        Fit the TF-IDf vocab and IDF weights on all note texts.
+        """
+        if not self._use_fallback:
+            return
+        note_len = len(note_texts)
+        df = {}
+        for doc in note_texts:
+            for token in set(self._tokenize(doc)):
+                df[token] = df.get(token, 0) + 1
         self._vocab = sorted(df.keys())
         self._idf = {
-            tok: math.log((N + 1) / (cnt + 1)) + 1.0 for tok, cnt in df.items()
+            token: math.log((note_len + 1) / (count + 1)) + 1.0 for token, count in df.items()
         }
 
     def _tfidf_vector(self, text: str) -> list[float]:
+        """
+        Return a normalised TF-IDF vector for a single note.
+        """
         tokens = self._tokenize(text)
         if not tokens:
             return [0.0] * len(self._vocab)
@@ -114,13 +128,21 @@ class SentenceBERTEmbedder:
         return [x / n for x in vec] if n > 0 else vec
 
     def encode(self, texts: list[str]) -> list[list[float]]:
+        """
+        Encode a list of texts into embedding vectors.
+        """
         if self._use_fallback:
-            self._fit_idf(texts)
+            if not self._vocab:
+                raise RuntimeError(f"Call fit() on full corpus before encode().")
             return [self._tfidf_vector(t) for t in texts]
         arr = self._model.encode(texts, show_progress_bar=False)
         return arr.tolist()
 
-    def pairwise_cosine(self, embeddings: list[list[float]]) -> list[list[float]]:
+    @staticmethod
+    def pairwise_cosine(embeddings: list[list[float]]) -> list[list[float]]:
+        """
+        Compute the pairwise cosine similarity matrix for a list of embeddings.
+        """
         n = len(embeddings)
         matrix = [[0.0] * n for _ in range(n)]
         for i in range(n):
