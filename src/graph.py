@@ -5,12 +5,27 @@ from typing import Optional
 
 # Graph implementation
 class _Note:
-    """TODO: DOCSTRING"""
+    """A note in a knowledge graph, used to represent a note that would appear in an obsidian vault.
+
+    Instance Attributes:
+        - name: The name of the file containing the note.
+        - content: The cleaned/parsed version of the content contained in the original note.
+        - links: The notes that are adjacent/linked to this note.
+
+    Representation Invariants:
+        - self not in self.neighbours
+        - all(self in u.links for u in self.links)
+    """
     name: str
     content: str
     links: set[_Note]
 
     def __init__(self, name: str, content: str):
+        """Initialise a new note with the given name and content.
+
+        This note is initialised with no neighbours/links.
+        """
+
         self.name = name
         self.content = content
         self.links = set()
@@ -19,10 +34,13 @@ class _Note:
         """Return the degree of this note."""
         return len(self.links)
 
-    # def similarity_score():
-
 class KnowledgeGraph:
-    """TODO: DOCSTRING"""
+    """A graph used to represent an obsidian note vault.
+    """
+    # Private Instance Attributes:
+    #     - _notes:
+    #         A collection of the notes contained in this graph.
+    #         Maps name to _Note object.
     _notes: dict[str, _Note]
 
     def __init__(self) -> None:
@@ -33,7 +51,6 @@ class KnowledgeGraph:
         """Add a note with the given name and raw data.
 
         Do nothing if the given name is already in the graph.
-        TODO: PRECONDITIONS
         """
         if name not in self._notes:
             self._notes[name] = _Note(name, content)
