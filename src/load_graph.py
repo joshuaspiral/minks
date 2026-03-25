@@ -17,6 +17,7 @@ import os
 
 from graph import KnowledgeGraph
 
+
 def _parse(raw: str):
     """Parse the raw data into something we can work with to analyse content.
 

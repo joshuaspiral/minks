@@ -12,9 +12,8 @@ Classes:
 """
 
 from __future__ import annotations
-from typing import Optional
 
-# Graph implementation
+
 class _Note:
     """A note in a knowledge graph, used to represent a note that would appear in an obsidian vault.
 
@@ -45,6 +44,7 @@ class _Note:
         """Return the degree of this note."""
         return len(self.links)
 
+
 class KnowledgeGraph:
     """A graph used to represent an obsidian note vault.
     """
@@ -71,7 +71,7 @@ class KnowledgeGraph:
 
         Raise a ValueError if name1 or nam2 do not appear as notes in this graph.
         """
-        if (name1 == name2):
+        if name1 == name2:
             raise ValueError(f"Self-links are not permitted: '{name1}'")
 
         if name1 not in self._notes or name2 not in self._notes:
