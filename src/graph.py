@@ -1,4 +1,15 @@
-"""TODO: DOCSTRING"""
+"""Knowledge graph implementation for representing an Obsidian note vault.
+
+Defines classes for modelling notes and the links between them.
+Each note is represented as a vertex, and links between notes are represented as edges.
+
+Classes:
+    _Note:
+        Represents a single note containing a name, parsed content, and links to neighbouring notes.
+
+    KnowledgeGraph:
+        Stores a collection of notes and the links between them.
+"""
 
 from __future__ import annotations
 from typing import Optional
