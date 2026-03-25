@@ -76,6 +76,6 @@ class KnowledgeGraph:
         else:
             raise ValueError
 
-    def get_all_vertices(self) -> set:
+    def get_all_note_names(self) -> set:
         """Return a set of all note names in this graph."""
         return set(self._notes.keys())
