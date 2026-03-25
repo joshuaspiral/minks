@@ -1,145 +1,81 @@
-import re
-import math
-import os
-from dataclasses import dataclass, field
-from typing import Optional
+"""TODO: DOCSTRING"""
 
+from __future__ import annotations
 
-@dataclass
-class Note:
+# Graph implementation
+class _Note:
+    """TODO: DOCSTRING"""
     name: str
-    raw: str
-    content: str = ""
-    links: list[str] = field(default_factory=list)
+    content: str
+    links: set[_Note]
 
-    def __post_init__(self):
-        self.links, self.content = _parse(self.raw)
+    def __init__(self, name: str, raw: str):
+        self.name = name
+        self.content, self.links = _parse(raw)
 
-    def __hash__(self):
-        return hash(self.name)
+    def degree(self) -> int:
+        """Return the degree of this note."""
+        return len(self.links)
 
-    def __eq__(self, other):
-        return isinstance(other, Note) and self.name == other.name
-
-
-def _parse(raw: str) -> tuple[list[str], str]:
-    text = raw
-    text = re.sub(r"^---\n.*?\n---\n", "", text, flags=re.DOTALL)
-    text = re.sub(r"!\[\[.*?\]\]", "", text)
-    links = re.findall(r"\[\[(.+?)(?:\|.+?)?\]\]", text)
-    links = [lk.strip() for lk in links]
-    text = re.sub(
-        r"\[\[(.+?)(?:\|(.+?))?\]\]", lambda m: m.group(2) or m.group(1), text
-    )
-    text = re.sub(r"(?<!\w)#\w+", "", text)
-    text = re.sub(r"#+\s*", "", text)
-    text = re.sub(r"\*{1,3}(.+?)\*{1,3}", r"\1", text)
-    text = re.sub(r"\s+", " ", text).strip()
-    return links, text
-
-
-def load_vault(vault_path: str) -> "KnowledgeGraph":
-    g = KnowledgeGraph()
-    for fname in os.listdir(vault_path):
-        if not fname.endswith(".md"):
-            continue
-        name = fname[:-3]
-        with open(os.path.join(vault_path, fname)) as f:
-            raw = f.read()
-        g._notes[name] = Note(name=name, raw=raw)
-        g._adj[name] = set()
-    for note in g._notes.values():
-        for target in note.links:
-            if target in g._notes:
-                g._adj[note.name].add(target)
-                g._adj[target].add(note.name)
-    return g
-
+    # def similarity_score():
 
 class KnowledgeGraph:
-    def __init__(self):
-        self._notes: dict[str, Note] = {}
-        self._adj: dict[str, set[str]] = {}
+    """TODO: DOCSTRING"""
+    _notes: dict[str, _Note]
 
-    def add_predicted_edges(self, predictions: list[tuple[str, str, float]]):
-        for u, v, _ in predictions:
-            self._adj[u].add(v)
-            self._adj[v].add(u)
+    def __init__(self) -> None:
+        """Initialise an empty graph (no notes or links)."""
+        self._notes = {}
 
-    @property
-    def nodes(self) -> list[str]:
-        return list(self._notes.keys())
+    def add_note(self, name, raw):
+        """Add a note with the given name and raw data.
 
-    @property
-    def edges(self) -> list[tuple[str, str]]:
-        seen = set()
-        result = []
-        for u, nbrs in self._adj.items():
-            for v in nbrs:
-                key = tuple(sorted([u, v]))
-                if key not in seen:
-                    seen.add(key)
-                    result.append((u, v))
-        return result
+        Do nothing if the given name is already in the graph.
+        TODO: PRECONDITIONS
+        """
+        if name not in self._notes:
+            self._notes[name] = _Note(name, raw)
 
-    def neighbours(self, node: str) -> set[str]:
-        return self._adj.get(node, set())
+    def add_link(self, name1: str, name2: str) -> None:
+        """Add a link between two notes with the given names in this graph.
 
-    def has_edge(self, u: str, v: str) -> bool:
-        return v in self._adj.get(u, set())
+        Raise a ValueError if name1 or nam2 do not appear as notes in this graph.
+        """
+        if (name1 == name2):
+            raise ValueError
 
-    def degree(self, node: str) -> int:
-        return len(self._adj.get(node, set()))
+        if name1 in self._notes and name2 in self._notes:
+            note1 = self._notes[name1]
+            note2 = self._notes[name2]
 
-    def get_note(self, name: str) -> Optional[Note]:
-        return self._notes.get(name)
+            note1.links.add(note2)
+            note2.links.add(note1)
+        else:
+            raise ValueError
 
-    def non_edges(self) -> list[tuple[str, str]]:
-        nodes = self.nodes
-        result = []
-        for i in range(len(nodes)):
-            for j in range(i + 1, len(nodes)):
-                u, v = nodes[i], nodes[j]
-                if not self.has_edge(u, v):
-                    result.append((u, v))
-        return result
+    def adjacent(self, name1: str, name2: str) -> bool:
+        """Return whether name1 and name2 are adjacent notes in this graph.
 
-    def degree_centrality(self) -> dict[str, float]:
-        n = len(self._notes)
-        if n <= 1:
-            return {node: 0.0 for node in self._notes}
-        return {node: self.degree(node) / (n - 1) for node in self._notes}
+        Return False if name1 or name2 do not appear as notes in this graph."""
+        if name1 in self._notes and name2 in self._notes:
+            note1 = self._notes[name1]
+            return any(note2.name == name2 for note2 in note1.links)
+        else:
+            return False
 
-    def connected_components(self) -> list[set[str]]:
-        # iterative dfs
-        visited = set()
-        components = []
-        for start in self._notes:
-            if start in visited:
-                continue
-            comp = set()
-            stack = [start]
-            while stack:
-                node = stack.pop()
-                if node in visited:
-                    continue
-                visited.add(node)
-                comp.add(node)
-                stack.extend(self._adj[node] - visited)
-            components.append(comp)
-        return components
+    def get_neighbours(self, name: str) -> set:
+        """Return a set of the neighbours of the given name.
 
-    def copy(self) -> "KnowledgeGraph":
-        g = KnowledgeGraph()
-        for name, note in self._notes.items():
-            g._notes[name] = note
-        for name, nbrs in self._adj.items():
-            g._adj[name] = set(nbrs)
-        return g
+        Note that the *names* are returned, not the _Note objects themselves.
 
-    def remove_edge(self, u: str, v: str):
-        self._adj[u].discard(v)
-        self._adj[v].discard(u)
+        Raise a ValueError if name does not appear as a vertex in this graph.
+        """
+        if name in self._notes:
+            note = self._notes[name]
+            return {neighbour.name for neighbour in note.links}
+        else:
+            raise ValueError
 
-    def __repr__(self):
-        return f"KnowledgeGraph(nodes={len(self._notes)}, edges={len(self.edges)})"
+    def get_all_note_names(self) -> set:
+        """Return a set of all note names in this graph."""
+        return set(self._notes.keys())
