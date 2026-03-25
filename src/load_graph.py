@@ -1,21 +1,37 @@
-"""TODO: DOCSTRING"""
+"""Utilities for loading an Obsidian vault into a KnowledgeGraph.
+
+This module provides functionality for parsing Markdown notes from an Obsidian vault and
+constructing a KnowledgeGraph representing the vault's structure.
+Each note becomes a vertex in the graph, and wiki-style links (e.g., [[Note Name]]) between notes become edges.
+
+Functions:
+    _parse:
+        Cleans raw Markdown note content and extracts internal note links.
+
+    load_vault:
+        Reads all Markdown files in a vault directory and builds a KnowledgeGraph containing the notes and their links.
+"""
 
 import re
 import os
 
 from graph import KnowledgeGraph
 
+
 def _parse(raw: str):
-    """TODO: DOCSTRING"""
-    # remove YAML front matter and embedded images
+    """Parse the raw data into something we can work with to analyse content.
+
+    Removes YAML front matter, embedded images, link embeds, tags, markdown headers,
+    formatting, and excessive whitespace.
+
+    Returns the cleaned content as well as a list of all the links the note made to other notes.
+    """
     content = re.sub(r"^---\n.*?\n---\n", "", raw, flags=re.DOTALL)
     content = re.sub(r"!\[\[.*?\]\]", "", content)
 
-    # make list of all links
     links = re.findall(r"\[\[(.+?)(?:\|.+?)?\]\]", content)
     links = [lk.strip() for lk in links]
 
-    # remove link embeds, tags, markdown headers, formatting, and excessive whitespace
     content = re.sub(
         r"\[\[(.+?)(?:\|(.+?))?\]\]", lambda m: m.group(2) or m.group(1), content
     )
@@ -28,11 +44,15 @@ def _parse(raw: str):
 
 
 def load_vault(vault_path: str) -> KnowledgeGraph:
-    """TODO: DOCSTRING"""
-    graph = KnowledgeGraph()
-    note_links: dict[str, list[str]] = {} # stores raw link names per note
+    """Loads all the notes from a vault onto a KnowledgeGraph and returns it.
 
-    # load all notes
+    Preconditions:
+        - vault_path is a valid file path to a vault
+    """
+    graph = KnowledgeGraph()
+    note_links: dict[str, list[str]] = {}
+
+    # Load all notes
     for file_name in os.listdir(vault_path):
         if not file_name.endswith('.md'):
             continue
@@ -45,7 +65,7 @@ def load_vault(vault_path: str) -> KnowledgeGraph:
         graph.add_note(name, content)
         note_links[name] = links
 
-    # Add edges only between notes that actually exist in the vault
+    # Add all links
     note_names = graph.get_all_note_names()
     for note, links in note_links.items():
         for neighbour in links:
