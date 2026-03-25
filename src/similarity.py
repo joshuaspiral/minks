@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 
 def jaccard(g: "KnowledgeGraph", u: str, v: str) -> float:
     """
-    Returns the Jaccard Similarity Index for nodes u and v.
+    Returns the Jaccard Similarity Index of str u and v.
     """
     nu, nv = g.get_neighbours(u), g.get_neighbours(v)
     intersection = len(nu & nv)
@@ -18,11 +18,11 @@ def jaccard(g: "KnowledgeGraph", u: str, v: str) -> float:
 
 def adamic_adar(g: "KnowledgeGraph", u: str, v: str) -> float:
     """
-    Returns the Adamic Adar score of nodes u and v.
+    Returns the Adamic Adar score of str u and v.
     """
     score = 0.0
     for w in g.get_neighbours(u) & g.get_neighbours(v):
-        deg = w.degree()
+        deg = g.get_note(w).degree()
         if deg > 1:
             score += 1.0 / math.log(deg)
     return score
@@ -34,16 +34,18 @@ def normalise(scores: list[float]) -> list[float]:
     """
     if not scores:
         return scores
-    lo, hi = min(scores), max(scores)
-    if hi == lo:
+    low, high = min(scores), max(scores)
+    if low == high:
         return [0.0] * len(scores)
-    return [(s - lo) / (hi - lo) for s in scores]
+    return [(score - low) / (high - low) for score in scores]
 
 
 def dot(a: list[float], b: list[float]) -> float:
     """
     Returns the dot product of vectors a and b.
     """
+    if len(a) != len(b):
+        raise ValueError(f"Vector length mismatch: {len(a)} vs {len(b)}")
     return sum(x * y for x, y in zip(a, b))
 
 
@@ -74,11 +76,11 @@ class SentenceBERTEmbedder:
         self._use_fallback = False
 
         try:
-            from sentence_transformers import SentenceTransformer
+            from sentence_transformers import SentenceTransformer  # type: ignore
 
             self._model = SentenceTransformer(self.MODEL_NAME)
             print("  [embedder] Using Sentence-BERT (all-MiniLM-L6-v2)")
-        except Exception:
+        except (ImportError, OSError):
             print("  [embedder] Sentence-BERT unavailable — using TF-IDF fallback")
             self._use_fallback = True
 

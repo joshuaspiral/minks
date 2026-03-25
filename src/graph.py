@@ -43,7 +43,7 @@ class KnowledgeGraph:
 
         Raise a ValueError if name1 or nam2 do not appear as notes in this graph.
         """
-        if (name1 == name2):
+        if name1 == name2:
             raise ValueError(f"Self-links are not permitted: '{name1}'")
 
         if name1 not in self._notes or name2 not in self._notes:
@@ -76,6 +76,12 @@ class KnowledgeGraph:
             return {neighbour.name for neighbour in note.links}
 
         raise ValueError(f"Note not found: '{name}'")
+
+    def get_note(self, name: str) -> _Note:
+        """
+        Returns the _Note object with the given name.
+        """
+        return self._notes[name]
 
     def get_all_note_names(self) -> set:
         """Return a set of all note names in this graph."""
