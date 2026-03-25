@@ -76,20 +76,17 @@ class MinkPredictor:
         for i in range(len(pairs)):
             u, v = pairs[i]
 
-            # Scale the Adamic-Adar score down to a 0.0 - 1.0 percentage
-            # (If max_aa is 0, we just set the score to 0 to avoid dividing by zero)
-            aa_scaled = (raw_aa_scores[i] / max_aa) if max_aa > 0 else 0.0
+            # Scale the Adamic-Adar score down to within 0 and 1, for accuratel matching with jaccard score
+            if max_aa > 0:
+                aa_scaled = raw_aa_scores[i] / max_aa
+            else:
+                aa_scaled = 0.0
 
-            # Calculate Jaccard (naturally 0.0 - 1.0)
             jaccard_score = jaccard(g, u, v)
-
-            # The structural score is whichever algorithm gave a stronger signal
             struct = max(jaccard_score, aa_scaled)
 
-            # Calculate the semantic text score
+            # Semantic text score
             sem = cosine_similarity(embeddings[u], embeddings[v])
-
-            # Combine them using our tuned weights
             combined = (self.w_struct * struct) + (self.w_sem * sem)
 
             results.append((u, v, combined, struct, sem))
@@ -101,17 +98,38 @@ class MinkPredictor:
         k: int = DEFAULT_K,
         embeddings: Optional[dict] = None,
     ) -> list[tuple[str, str, float]]:
+        """Predict and return the top-k missing links in the graph.
+
+        Return a list of tuples with the predicted pairs and their combined score, 
+        sorted in descending order of score
+        """
+    
         if embeddings is None:
             embeddings = self._compute_embeddings(g)
         scored = self._score_pairs(g, g.non_edges(), embeddings)
+
         scored.sort(key=lambda x: x[2], reverse=True)
-        return [(u, v, s) for u, v, s, _, _ in scored[:k]]
+        top_k_results = scored[:k]
+        
+        final_predictions = []
+        
+        for item in top_k_results:
+            u = item[0]          
+            v = item[1]          
+            combined_score = item[2]      
+            clean_match = (u, v, combined_score)
+            final_predictions.append(clean_match)
+        return final_predictions
 
     def score_all(
         self,
         g: KnowledgeGraph,
         embeddings: Optional[dict] = None,
     ) -> list[tuple[str, str, float, float, float]]:
+        """Score all non-existent edges in the given graph and return them sorted by highest score.
+        Returns a list of tuples containing the node pair, combined score, structural score, and semantic score.
+        """
+
         if embeddings is None:
             embeddings = self._compute_embeddings(g)
         scored = self._score_pairs(g, g.non_edges(), embeddings)
@@ -124,19 +142,25 @@ class MinkPredictor:
         holdout_frac: float = 0.2,
         seed: int = 42,
     ) -> tuple[KnowledgeGraph, list[tuple[str, str]]]:
+        """Hide a fixed percentage of the graph's links."""
         rng = random.Random(seed)
-        g_reduced = g.copy()
-        edges = g.edges.copy()
-        rng.shuffle(edges)
-        n_holdout = max(1, int(len(edges) * holdout_frac))
-        held_out = []
-        for u, v in edges:
-            if len(held_out) >= n_holdout:
+
+        practice_graph = g.copy()
+        all_edges = g.edges.copy()
+        rng.shuffle(all_edges)
+        target_hidden_count = max(1, int(len(all_edges) * holdout_frac))
+        
+        hidden_links = []
+        
+        for u, v in all_edges:
+            if len(hidden_links) >= target_hidden_count:
                 break
-            if g_reduced.degree(u) > 1 and g_reduced.degree(v) > 1:
-                g_reduced.remove_edge(u, v)
-                held_out.append((u, v))
-        return g_reduced, held_out
+                
+            if practice_graph.degree(u) > 1 and practice_graph.degree(v) > 1:
+                practice_graph.remove_edge(u, v)
+                hidden_links.append((u, v))
+                
+        return practice_graph, hidden_links
 
     @staticmethod
     def _recall_at_k(
@@ -144,11 +168,30 @@ class MinkPredictor:
         predictions: list[tuple[str, str, float]],
         k: int,
     ) -> float:
-        if not held_out:
+        """Calculate the recall at k for the actual hidden edges that were found in a given set of predictions,
+        
+        """
+        if len(held_out) == 0:
             return 0.0
-        top_k = {tuple(sorted([u, v])) for u, v, _ in predictions[:k]}
-        held_out_set = {tuple(sorted([u, v])) for u, v in held_out}
-        return len(top_k & held_out_set) / len(held_out_set)
+            
+        correct = []
+        for u, v in held_out:
+            standard_link = tuple(sorted([u, v]))
+            correct.append(standard_link)
+            
+        top_k_guesses = []
+        for i in range(min(k, len(predictions))):
+            u = predictions[i][0]
+            v = predictions[i][1]
+            standard_link = tuple(sorted([u, v]))
+            top_k_guesses.append(standard_link)
+            
+        matches = 0
+        for guess in top_k_guesses:
+            if guess in correct:
+                matches += 1
+                
+        return matches / len(correct)
 
     @staticmethod
     def _precision_at_k(
@@ -156,12 +199,25 @@ class MinkPredictor:
         predictions: list[tuple[str, str, float]],
         k: int,
     ) -> float:
+        """Calculate the proportion of the top k predictions that were actually hidden edges.
+        """
         if k == 0:
             return 0.0
-        held_out_set = {tuple(sorted([u, v])) for u, v in held_out}
-        hits = sum(
-            1 for u, v, _ in predictions[:k] if tuple(sorted([u, v])) in held_out_set
-        )
+            
+        correct = []
+        for u, v in held_out:
+            standard_link = tuple(sorted([u, v]))
+            correct.append(standard_link)
+            
+        hits = 0
+        for i in range(min(k, len(predictions))):
+            u = predictions[i][0]
+            v = predictions[i][1]
+            guess = tuple(sorted([u, v]))
+            
+            if guess in correct:
+                hits += 1
+                
         return hits / k
 
     def evaluate(
@@ -172,6 +228,7 @@ class MinkPredictor:
         n_trials: int = 5,
         embeddings: Optional[dict] = None,
     ) -> dict:
+        """Evaluate the predictor's performance on the given graph using holdout validation on multiple trials. """
         if embeddings is None:
             embeddings = self._compute_embeddings(g)
         recalls, precisions = [], []
@@ -203,6 +260,12 @@ class MinkPredictor:
         n_trials: int = 5,
         steps: int = 5,
     ) -> dict:
+        """Tune the w_struct and w_sem weights to find the best combination for the graph.
+        
+        Tests different weight ratios (e.g., 0.0/1.0, 0.2/0.8) using the evaluate
+        method and updates the predictor's weights to the combination that 
+        achieves the highest recall@k.
+        """
         embeddings = self._compute_embeddings(g_tune)
         grid = [i / steps for i in range(steps + 1)]
         best = {"recall": -1.0, "w_struct": 0.4, "w_sem": 0.6}
