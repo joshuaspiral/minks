@@ -6,23 +6,52 @@ from similarity import jaccard, adamic_adar, normalise, SentenceBERTEmbedder
 
 
 class MinkPredictor:
+    """A missing link prediction class for note graphs that uses a weighted combination of graph structure and semantic similarity scores.
+
+    Instance Attributes:
+        - w_struct: The weight applied to the structural similarity score.
+        - w_sem: The weight applied to the semantic similarity score.
+        - _embedder: The model used to generate semantic text embeddings (lazy-loaded to save memory).
+
+    Representation Invariants:
+        - 0 <= self.w_struct <= 1
+        - 0 <= self.w_sem <= 1
+        - math.isclose(self.w_struct + self.w_sem, 1)
+    """
     DEFAULT_K = 10
 
     def __init__(self, w_struct: float = 0.4, w_sem: float = 0.6):
+        """Initialise a new MinkPredictor class with provided structural and semantic weights.
+
+        Preconditions:
+            - w_sem + w_struct == 1
+        """
         self.w_struct = w_struct
         self.w_sem = w_sem
         self._embedder: Optional[SentenceBERTEmbedder] = None
 
     def _get_embedder(self) -> SentenceBERTEmbedder:
+        """Return the NLP sentence embedder, initialising a new one if none are present."""
         if self._embedder is None:
             self._embedder = SentenceBERTEmbedder()
         return self._embedder
 
     def _compute_embeddings(self, g: KnowledgeGraph) -> dict[str, list[float]]:
+        """Return a dictionary mapping note names to their NLP vector embeddings for the graph."""
         nodes = g.nodes
-        texts = [g.get_note(n).content for n in nodes]
+        texts = []
+        for n in nodes:
+            note_object = g.get_note(n)
+            texts.append(note_object.content)
+            
         vecs = self._get_embedder().encode(texts)
-        return {n: v for n, v in zip(nodes, vecs)}
+        final_dictionary = {}
+        for i in range(len(nodes)):
+            note_name = nodes[i]
+            vector = vecs[i]
+            final_dictionary[note_name] = vector
+
+        return final_dictionary
 
     def _score_pairs(
         self,
@@ -30,14 +59,39 @@ class MinkPredictor:
         pairs: list[tuple[str, str]],
         embeddings: dict[str, list[float]],
     ) -> list[tuple[str, str, float, float, float]]:
-        from similarity import cosine_similarity
+        """Calculate the combined similarity score for a given list of note pairs.
 
-        aa_norm = normalise([adamic_adar(g, u, v) for u, v in pairs])
+        Returns a list of tuples containing the node pair, combined score, structural score, and semantic score.
+        """
+
+        aa_scores = []
+        for u, v in pairs:
+            aa_scores.append(adamic_adar(g, u, v))
+        if aa_scores:
+            max_aa = max(aa_scores)
+        else:
+            max_aa = 0
+        
         results = []
-        for idx, (u, v) in enumerate(pairs):
-            struct = max(jaccard(g, u, v), aa_norm[idx])
+        for i in range(len(pairs)):
+            u, v = pairs[i]
+
+            # Scale the Adamic-Adar score down to a 0.0 - 1.0 percentage
+            # (If max_aa is 0, we just set the score to 0 to avoid dividing by zero)
+            aa_scaled = (raw_aa_scores[i] / max_aa) if max_aa > 0 else 0.0
+
+            # Calculate Jaccard (naturally 0.0 - 1.0)
+            jaccard_score = jaccard(g, u, v)
+
+            # The structural score is whichever algorithm gave a stronger signal
+            struct = max(jaccard_score, aa_scaled)
+
+            # Calculate the semantic text score
             sem = cosine_similarity(embeddings[u], embeddings[v])
-            combined = self.w_struct * struct + self.w_sem * sem
+
+            # Combine them using our tuned weights
+            combined = (self.w_struct * struct) + (self.w_sem * sem)
+
             results.append((u, v, combined, struct, sem))
         return results
 
