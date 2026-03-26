@@ -6,5 +6,13 @@ proposal/*.out
 proposal/*.synctex.gz  
 proposal/*.blg
 proposal/*.bbl
+report/*.fdb_latexmk  
+report/*.log  
+report/*.aux  
+report/*.fls          
+report/*.out  
+report/*.synctex.gz  
+report/*.blg
+report/*.bbl
 venv/
 src/vaults/

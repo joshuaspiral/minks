@@ -91,9 +91,6 @@ INPUT /usr/share/texmf-dist/tex/latex/graphics-def/pdftex.def
 INPUT /usr/share/texmf-dist/tex/latex/graphics-def/pdftex.def
 INPUT /usr/share/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def
 INPUT /usr/share/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def
-INPUT ./report.aux
-INPUT ./report.aux
-INPUT report.aux
 OUTPUT report.aux
 INPUT ./report.out
 INPUT ./report.out
