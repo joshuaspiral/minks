@@ -6,5 +6,5 @@ proposal/*.out
 proposal/*.synctex.gz  
 proposal/*.blg
 proposal/*.bbl
-.venv/
 venv/
+src/vaults/

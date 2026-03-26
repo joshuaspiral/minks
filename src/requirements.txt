@@ -1,1 +1,7 @@
+# NLP
 sentence_transformers
+scikit-learn
+
+# Visualisation
+plotly
+networkx

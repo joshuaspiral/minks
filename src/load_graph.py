@@ -21,10 +21,10 @@ from graph import KnowledgeGraph
 def _parse(raw: str):
     """Parse the raw data into something we can work with to analyse content.
 
-    Removes YAML front matter, embedded images, link embeds, tags, markdown headers,
+    Remove YAML front matter, embedded images, link embeds, tags, markdown headers,
     formatting, and excessive whitespace.
 
-    Returns the cleaned content as well as a list of all the links the note made to other notes.
+    Return the cleaned content as well as a list of all the links the note made to other notes.
     """
     content = re.sub(r"^---\n.*?\n---\n", "", raw, flags=re.DOTALL)
     content = re.sub(r"!\[\[.*?\]\]", "", content)
@@ -44,7 +44,7 @@ def _parse(raw: str):
 
 
 def load_vault(vault_path: str) -> KnowledgeGraph:
-    """Loads all the notes from a vault onto a KnowledgeGraph and returns it.
+    """Load all the notes from a vault onto a KnowledgeGraph and returns it.
 
     Preconditions:
         - vault_path is a valid file path to a vault
@@ -54,7 +54,7 @@ def load_vault(vault_path: str) -> KnowledgeGraph:
 
     # Load all notes
     for file_name in os.listdir(vault_path):
-        if not file_name.endswith('.md'):
+        if not file_name.endswith(".md"):
             continue
 
         with open(os.path.join(vault_path, file_name)) as file:

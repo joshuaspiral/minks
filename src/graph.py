@@ -15,7 +15,7 @@ from __future__ import annotations
 
 
 class _Note:
-    """A note in a knowledge graph, used to represent a note that would appear in an obsidian vault.
+    """A note in a knowledge graph, used to represent a note that would appear in an Obsidian vault.
 
     Instance Attributes:
         - name: The name of the file containing the note.
@@ -26,6 +26,7 @@ class _Note:
         - self not in self.neighbours
         - all(self in u.links for u in self.links)
     """
+
     name: str
     content: str
     links: set[_Note]
@@ -46,8 +47,8 @@ class _Note:
 
 
 class KnowledgeGraph:
-    """A graph used to represent an obsidian note vault.
-    """
+    """A graph used to represent an obsidian note vault."""
+
     # Private Instance Attributes:
     #     - _notes:
     #         A collection of the notes contained in this graph.
