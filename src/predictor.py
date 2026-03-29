@@ -39,7 +39,7 @@ class MinkPredictor:
 
     def _compute_embeddings(self, g: KnowledgeGraph) -> dict[str, list[float]]:
         """Return a dictionary mapping note names to their NLP vector embeddings for the graph."""
-        notes = g.notes
+        notes = g.get_notes()
         texts = []
         for n in notes:
             note_object = g.get_note(n)
@@ -79,7 +79,7 @@ class MinkPredictor:
         for i in range(len(pairs)):
             u, v = pairs[i]
 
-            # Scale the Adamic-Adar score down to within 0 and 1, for accurate matching with jaccard score
+            # Scale the Adamic-Adar score down to within 0 and 1, for accuratel matching with jaccard score
             if max_aa > 0:
                 aa_scaled = aa_scores[i] / max_aa
             else:
@@ -139,8 +139,8 @@ class MinkPredictor:
         scored.sort(key=lambda x: x[2], reverse=True)
         return scored
 
-    @staticmethod
     def _holdout_split(
+        self,
         g: KnowledgeGraph,
         holdout_frac: float = 0.2,
         seed: int = 42,
@@ -149,7 +149,7 @@ class MinkPredictor:
         rng = random.Random(seed)
 
         practice_graph = g.copy()
-        all_edges = g.edges.copy()
+        all_edges = g.get_edges().copy()
         rng.shuffle(all_edges)
         target_hidden_count = max(1, int(len(all_edges) * holdout_frac))
 
@@ -165,8 +165,8 @@ class MinkPredictor:
 
         return practice_graph, hidden_links
 
-    @staticmethod
     def _recall_at_k(
+        self,
         held_out: list[tuple[str, str]],
         predictions: list[tuple[str, str, float]],
         k: int,
@@ -194,8 +194,8 @@ class MinkPredictor:
 
         return matches / len(correct)
 
-    @staticmethod
     def _precision_at_k(
+        self,
         held_out: list[tuple[str, str]],
         predictions: list[tuple[str, str, float]],
         k: int,

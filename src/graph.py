@@ -45,6 +45,17 @@ class _Note:
         """Return the degree of this note."""
         return len(self.links)
 
+    def get_connected_component(self, visited: set[str]) -> set[str]:
+        """Return the set of all note names reachable from this note using recursive DFS.
+
+        visited is the set of note names that have already been visited.
+        """
+        visited.add(self.name)
+        for neighbour in self.links:
+            if neighbour.name not in visited:
+                neighbour.get_connected_component(visited)
+        return visited
+
 
 class KnowledgeGraph:
     """A graph used to represent an obsidian note vault."""
@@ -116,13 +127,11 @@ class KnowledgeGraph:
         """Return a set of all note names in this graph."""
         return set(self._notes.keys())
 
-    @property
-    def notes(self) -> list[str]:
+    def get_notes(self) -> list[str]:
         """Return a list of all note names in this graph."""
         return list(self._notes.keys())
 
-    @property
-    def edges(self) -> list[tuple[str, str]]:
+    def get_edges(self) -> list[tuple[str, str]]:
         """Return a list of all edges as (name1, name2) tuples, each pair appearing once."""
         seen = set()
         result = []
@@ -145,8 +154,8 @@ class KnowledgeGraph:
 
     def non_edges(self) -> list[tuple[str, str]]:
         """Return a list of all non-existent edges (pairs of unlinked, distinct notes)."""
-        names = self.notes
-        existing = set(self.edges)
+        names = self.get_notes()
+        existing = set(self.get_edges())
         result = []
         for i in range(len(names)):
             for j in range(i + 1, len(names)):
@@ -172,7 +181,7 @@ class KnowledgeGraph:
         new_graph = KnowledgeGraph()
         for name, note in self._notes.items():
             new_graph.add_note(name, note.content)
-        for name1, name2 in self.edges:
+        for name1, name2 in self.get_edges():
             new_graph.add_link(name1, name2)
         return new_graph
 
@@ -190,21 +199,11 @@ class KnowledgeGraph:
         return {name: note.get_degree() / (n - 1) for name, note in self._notes.items()}
 
     def connected_components(self) -> list[set[str]]:
-        """Return a list of sets, each containing the note names in one connected component."""
+        """Recursively return a list of sets, each containing the note names in one connected component."""
         visited = set()
         components = []
-        for name in self._notes:
+        for name, note in self._notes.items():
             if name not in visited:
-                component = set()
-                queue = [name]
-                while queue:
-                    current = queue.pop()
-                    if current in visited:
-                        continue
-                    visited.add(current)
-                    component.add(current)
-                    for neighbour in self.get_neighbours(current):
-                        if neighbour not in visited:
-                            queue.append(neighbour)
-                components.append(component)
+                component = note.get_connected_component(visited)
+                components.append(component.copy())
         return components

@@ -72,7 +72,7 @@ def main():
     print(
         f"\n  components: {len(vault_b.connected_components())} → {len(vault_b_aug.connected_components())}"
     )
-    print(f"  edges:      {len(vault_b.edges)} → {len(vault_b_aug.edges)}")
+    print(f"  edges:      {len(vault_b.get_edges())} → {len(vault_b_aug.get_edges())}")
 
     print("6. Generating visualisations")
     graph_viz(

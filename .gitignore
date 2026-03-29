@@ -1,20 +1,17 @@
-proposal/*.fdb_latexmk  
-proposal/*.log  
-proposal/*.aux  
-proposal/*.fls          
-proposal/*.out  
-proposal/*.synctex.gz  
-proposal/*.blg
-proposal/*.bbl
-report/*.fdb_latexmk  
-report/*.log  
-report/*.aux  
-report/*.fls          
-report/*.out  
-report/*.synctex.gz  
-report/*.blg
-report/*.bbl
+# Python
+__pycache__/
+*.pyc
+
+# LaTeX build artifacts
+report/report.fls
+report/report.log
+report/report.out
+report/report.synctex.gz
+
+proposal/proposal.fls
+proposal/proposal.log
+proposal/proposal.out
+proposal/proposal.synctex.gz
+
+# Virtual environment
 venv/
-src/vaults/
-*.el
-/report/_region_.tex

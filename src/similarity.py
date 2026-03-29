@@ -1,12 +1,8 @@
 import math
 import re
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from graph import KnowledgeGraph
 
 
-def jaccard(g: "KnowledgeGraph", u: str, v: str) -> float:
+def jaccard(g, u: str, v: str) -> float:
     """
     Returns the Jaccard Similarity Index of str u and v.
     """
@@ -16,7 +12,7 @@ def jaccard(g: "KnowledgeGraph", u: str, v: str) -> float:
     return intersection / union if union > 0 else 0.0
 
 
-def adamic_adar(g: "KnowledgeGraph", u: str, v: str) -> float:
+def adamic_adar(g, u: str, v: str) -> float:
     """
     Returns the Adamic Adar score of str u and v.
     """
@@ -90,8 +86,7 @@ class SentenceBERTEmbedder:
             print("  [embedder] Sentence-BERT unavailable — using TF-IDF fallback")
             self._use_fallback = True
 
-    @staticmethod
-    def _tokenize(text: str) -> list[str]:
+    def _tokenize(self, text: str) -> list[str]:
         return re.findall(r"[a-z]+", text.lower())
 
     def fit(self, note_texts: list[str]) -> None:
@@ -138,8 +133,7 @@ class SentenceBERTEmbedder:
         arr = self._model.encode(texts, show_progress_bar=False)
         return arr.tolist()
 
-    @staticmethod
-    def pairwise_cosine(embeddings: list[list[float]]) -> list[list[float]]:
+    def pairwise_cosine(self, embeddings: list[list[float]]) -> list[list[float]]:
         """
         Compute the pairwise cosine similarity matrix for a list of embeddings.
         """
