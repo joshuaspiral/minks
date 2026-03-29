@@ -68,6 +68,11 @@ def graph_viz(
     # Nodes
     node_x = [pos[node][0] for node in nx_g.nodes()]
     node_y = [pos[node][1] for node in nx_g.nodes()]
+    node_names = list(nx_g.nodes())
+    node_hover = [
+        "<b>" + n + "</b><br><br>" + g.get_note(n).content[:500].replace("\n", "<br>")
+        for n in node_names
+    ]
 
     fig.add_trace(
         go.Scatter(
@@ -75,7 +80,7 @@ def graph_viz(
             y=node_y,
             mode="markers",
             hoverinfo="text",
-            text=list(nx_g.nodes()),
+            hovertext=node_hover,
             marker=dict(showscale=False, color="lightblue", size=10, line_width=2),
             name="Notes",
         )
