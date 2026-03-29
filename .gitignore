@@ -16,3 +16,5 @@ report/*.blg
 report/*.bbl
 venv/
 src/vaults/
+*.el
+/report/_region_.tex

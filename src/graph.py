@@ -115,3 +115,96 @@ class KnowledgeGraph:
     def get_all_note_names(self) -> set:
         """Return a set of all note names in this graph."""
         return set(self._notes.keys())
+
+    @property
+    def notes(self) -> list[str]:
+        """Return a list of all note names in this graph."""
+        return list(self._notes.keys())
+
+    @property
+    def edges(self) -> list[tuple[str, str]]:
+        """Return a list of all edges as (name1, name2) tuples, each pair appearing once."""
+        seen = set()
+        result = []
+        for name, note in self._notes.items():
+            for neighbour in note.links:
+                edge = tuple(sorted((name, neighbour.name)))
+                if edge not in seen:
+                    seen.add(edge)
+                    result.append(edge)
+        return result
+
+    def degree(self, name: str) -> int:
+        """Return the degree of the note with the given name.
+
+        Raise a ValueError if name does not appear as a note in this graph.
+        """
+        if name not in self._notes:
+            raise ValueError(f"Note not found: '{name}'")
+        return self._notes[name].get_degree()
+
+    def non_edges(self) -> list[tuple[str, str]]:
+        """Return a list of all non-existent edges (pairs of unlinked, distinct notes)."""
+        names = self.notes
+        existing = set(self.edges)
+        result = []
+        for i in range(len(names)):
+            for j in range(i + 1, len(names)):
+                edge = tuple(sorted((names[i], names[j])))
+                if edge not in existing:
+                    result.append((names[i], names[j]))
+        return result
+
+    def remove_edge(self, name1: str, name2: str) -> None:
+        """Remove the edge between name1 and name2.
+
+        Raise a ValueError if either note does not exist or they are not linked.
+        """
+        if name1 not in self._notes or name2 not in self._notes:
+            raise ValueError(f"One or both notes not found: '{name1}', '{name2}'")
+        note1 = self._notes[name1]
+        note2 = self._notes[name2]
+        note1.links.discard(note2)
+        note2.links.discard(note1)
+
+    def copy(self) -> KnowledgeGraph:
+        """Return a deep copy of this graph."""
+        new_graph = KnowledgeGraph()
+        for name, note in self._notes.items():
+            new_graph.add_note(name, note.content)
+        for name1, name2 in self.edges:
+            new_graph.add_link(name1, name2)
+        return new_graph
+
+    def add_predicted_edges(self, predictions: list[tuple[str, str, float]]) -> None:
+        """Add edges from a list of (name1, name2, score) prediction tuples."""
+        for name1, name2, _ in predictions:
+            if not self.adjacent(name1, name2):
+                self.add_link(name1, name2)
+
+    def degree_centrality(self) -> dict[str, float]:
+        """Return a dictionary mapping note names to their degree centrality scores."""
+        n = len(self._notes)
+        if n <= 1:
+            return {name: 0.0 for name in self._notes}
+        return {name: note.get_degree() / (n - 1) for name, note in self._notes.items()}
+
+    def connected_components(self) -> list[set[str]]:
+        """Return a list of sets, each containing the note names in one connected component."""
+        visited = set()
+        components = []
+        for name in self._notes:
+            if name not in visited:
+                component = set()
+                queue = [name]
+                while queue:
+                    current = queue.pop()
+                    if current in visited:
+                        continue
+                    visited.add(current)
+                    component.add(current)
+                    for neighbour in self.get_neighbours(current):
+                        if neighbour not in visited:
+                            queue.append(neighbour)
+                components.append(component)
+        return components

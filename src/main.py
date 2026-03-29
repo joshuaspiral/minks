@@ -3,7 +3,7 @@ import os
 from graph import KnowledgeGraph
 from load_graph import load_vault
 from predictor import MinkPredictor
-from visualise import graph_viz, layout_comparison
+from visualize import graph_viz, layout_comparison
 
 K = 10
 OUTPUT = "output"

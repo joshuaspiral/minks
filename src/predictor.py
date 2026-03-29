@@ -2,7 +2,7 @@ import random
 import math
 from typing import Optional
 from graph import KnowledgeGraph
-from similarity import jaccard, adamic_adar, normalise, SentenceBERTEmbedder
+from similarity import jaccard, adamic_adar, normalise, cosine_similarity, SentenceBERTEmbedder
 
 
 class MinkPredictor:
@@ -41,11 +41,13 @@ class MinkPredictor:
         """Return a dictionary mapping note names to their NLP vector embeddings for the graph."""
         notes = g.notes
         texts = []
-        for n in nodes:
+        for n in notes:
             note_object = g.get_note(n)
             texts.append(note_object.content)
 
-        vecs = self._get_embedder().encode(texts)
+        embedder = self._get_embedder()
+        embedder.fit(texts)
+        vecs = embedder.encode(texts)
         final_dictionary = {}
         for i in range(len(notes)):
             note_name = notes[i]
@@ -77,9 +79,9 @@ class MinkPredictor:
         for i in range(len(pairs)):
             u, v = pairs[i]
 
-            # Scale the Adamic-Adar score down to within 0 and 1, for accuratel matching with jaccard score
+            # Scale the Adamic-Adar score down to within 0 and 1, for accurate matching with jaccard score
             if max_aa > 0:
-                aa_scaled = raw_aa_scores[i] / max_aa
+                aa_scaled = aa_scores[i] / max_aa
             else:
                 aa_scaled = 0.0
 
@@ -294,4 +296,3 @@ class MinkPredictor:
             f"  Best weights: w_struct={self.w_struct}, w_sem={self.w_sem} (recall@{k}={best['recall']:.3f})"
         )
         return {"best": best, "grid": results}
-
