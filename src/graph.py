@@ -123,6 +123,10 @@ class KnowledgeGraph:
         """
         return self._notes[name]
 
+    def __str__(self) -> str:
+        """Return a string representation showing note and edge counts."""
+        return f"KnowledgeGraph({len(self._notes)} notes, {len(self.get_edges())} edges)"
+
     def get_all_note_names(self) -> set:
         """Return a set of all note names in this graph."""
         return set(self._notes.keys())
@@ -199,7 +203,7 @@ class KnowledgeGraph:
         return {name: note.get_degree() / (n - 1) for name, note in self._notes.items()}
 
     def connected_components(self) -> list[set[str]]:
-        """Recursively return a list of sets, each containing the note names in one connected component."""
+        """Return a list of sets, each containing the note names in one connected component."""
         visited = set()
         components = []
         for name, note in self._notes.items():
