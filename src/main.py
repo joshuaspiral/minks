@@ -19,12 +19,13 @@ K = 10
 OUTPUT = "output"
 os.makedirs(OUTPUT, exist_ok=True)
 
+
 def main():
     parser = argparse.ArgumentParser(description="Minks Missing Link Predictor")
     parser.add_argument(
         "--use-tfidf",
         action="store_true",
-        help="Force the use of the custom TF-IDF algorithm instead of Sentence-BERT."
+        help="Force the use of the custom TF-IDF algorithm instead of Sentence-BERT.",
     )
     args = parser.parse_args()
 
@@ -52,7 +53,7 @@ def main():
     print("3. Evaluating on vault_b (test set)")
     print(f"  Fixed weights: w_struct={predictor.w_struct}, w_sem={predictor.w_sem}")
 
-    embeddings_b = predictor._compute_embeddings(vault_b)
+    embeddings_b = predictor.compute_embeddings(vault_b)
     eval_results = predictor.evaluate(
         vault_b, k=K, holdout_frac=0.2, n_trials=5, embeddings=embeddings_b
     )

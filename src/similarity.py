@@ -98,6 +98,7 @@ class SentenceBERTEmbedder:
         - self._use_fallback is True or self._model is not None
         - not self._use_fallback or all(isinstance(v, float) for v in self._idf.values())
     """
+
     MODEL_NAME = "all-MiniLM-L6-v2"
 
     def __init__(self, force_tfidf: bool = False) -> None:
@@ -134,7 +135,8 @@ class SentenceBERTEmbedder:
                 df[token] = df.get(token, 0) + 1
         self._vocab = sorted(df.keys())
         self._idf = {
-            token: math.log((note_len + 1) / (count + 1)) + 1.0 for token, count in df.items()
+            token: math.log((note_len + 1) / (count + 1)) + 1.0
+            for token, count in df.items()
         }
 
     def _tfidf_vector(self, text: str) -> list[float]:
@@ -178,13 +180,34 @@ class SentenceBERTEmbedder:
                 matrix[j][i] = s
         return matrix
 
+
 if __name__ == "__main__":
     import doctest
+
     doctest.testmod()
 
     import python_ta
-    python_ta.check_all(config={
-        'extra-imports': ['sentence_transformers', 'plotly.graph_objects', 'networkx', 'plotly.subplots', 'numpy', 'sklearn.manifold', 'graph', 'similarity', 'load_graph', 'predictor', 'visualize', 'os', 're', 'math', 'random'],
-        'allowed-io': ['fit', '__init__', 'main', 'evaluate'],
-        'max-line-length': 120
-    })
+
+    python_ta.check_all(
+        config={
+            "extra-imports": [
+                "sentence_transformers",
+                "plotly.graph_objects",
+                "networkx",
+                "plotly.subplots",
+                "numpy",
+                "sklearn.manifold",
+                "graph",
+                "similarity",
+                "load_graph",
+                "predictor",
+                "visualize",
+                "os",
+                "re",
+                "math",
+                "random",
+            ],
+            "allowed-io": ["fit", "__init__", "main", "evaluate"],
+            "max-line-length": 120,
+        }
+    )

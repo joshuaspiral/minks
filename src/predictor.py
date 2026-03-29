@@ -7,10 +7,14 @@ All rights reserved.
 """
 
 import random
-import math
 from typing import Optional
 from graph import KnowledgeGraph
-from similarity import jaccard, adamic_adar, normalise, cosine_similarity, SentenceBERTEmbedder
+from similarity import (
+    jaccard,
+    adamic_adar,
+    cosine_similarity,
+    SentenceBERTEmbedder,
+)
 
 
 class MinkPredictor:
@@ -29,16 +33,18 @@ class MinkPredictor:
 
     DEFAULT_K = 10
 
-    def __init__(self, w_struct: float = 0.4, w_sem: float = 0.6, use_tfidf: bool = False) -> None:
-            """Initialise a new MinkPredictor class with provided structural and semantic weights.
+    def __init__(
+        self, w_struct: float = 0.4, w_sem: float = 0.6, use_tfidf: bool = False
+    ) -> None:
+        """Initialise a new MinkPredictor class with provided structural and semantic weights.
 
-            Preconditions:
-                - w_sem + w_struct == 1
-            """
-            self.w_struct = w_struct
-            self.w_sem = w_sem
-            self._use_tfidf = use_tfidf
-            self._embedder: Optional[SentenceBERTEmbedder] = None
+        Preconditions:
+            - w_sem + w_struct == 1
+        """
+        self.w_struct = w_struct
+        self.w_sem = w_sem
+        self._use_tfidf = use_tfidf
+        self._embedder: Optional[SentenceBERTEmbedder] = None
 
     def _get_embedder(self) -> SentenceBERTEmbedder:
         """Return the NLP sentence embedder, initialising a new one if none are present."""
@@ -46,7 +52,7 @@ class MinkPredictor:
             self._embedder = SentenceBERTEmbedder(force_tfidf=self._use_tfidf)
         return self._embedder
 
-    def _compute_embeddings(self, g: KnowledgeGraph) -> dict[str, list[float]]:
+    def compute_embeddings(self, g: KnowledgeGraph) -> dict[str, list[float]]:
         """Return a dictionary mapping note names to their NLP vector embeddings for the graph."""
         notes = g.get_notes()
         texts = []
@@ -82,7 +88,7 @@ class MinkPredictor:
             clip_idx = int(len(sorted_aa) * 0.95)
             max_aa = sorted_aa[clip_idx] if len(sorted_aa) > 0 else 0
             if max_aa == 0:
-                max_aa = max(aa_scores) # Fallback
+                max_aa = max(aa_scores)  # Fallback
         else:
             max_aa = 0
 
@@ -136,8 +142,10 @@ class MinkPredictor:
     ) -> dict:
         """Evaluate the predictor's performance, usnig MRR to fix tuning ties."""
         if embeddings is None:
-            embeddings = self._compute_embeddings(g)
+            embeddings = self.compute_embeddings(g)
         recalls, precisions, mrrs = [], [], []
+
+        dynamic_k = k
 
         for trial in range(n_trials):
             g_reduced, held_out = self._holdout_split(
@@ -174,7 +182,7 @@ class MinkPredictor:
         steps: int = 5,
     ) -> dict:
         """Tune using MRR to correctly break ties when sorting rank shifts."""
-        embeddings = self._compute_embeddings(g_tune)
+        embeddings = self.compute_embeddings(g_tune)
         grid = [i / steps for i in range(steps + 1)]
         best = {"mrr": -1.0, "w_struct": 0.4, "w_sem": 0.6}
         results = []
@@ -218,7 +226,7 @@ class MinkPredictor:
         """
 
         if embeddings is None:
-            embeddings = self._compute_embeddings(g)
+            embeddings = self.compute_embeddings(g)
         scored = self._score_pairs(g, g.non_edges(), embeddings)
         scored.sort(key=lambda x: x[2], reverse=True)
         return scored
@@ -313,7 +321,7 @@ class MinkPredictor:
         """Predict and return the top-k missing links in the graph."""
 
         if embeddings is None:
-            embeddings = self._compute_embeddings(g)
+            embeddings = self.compute_embeddings(g)
         scored = self._score_pairs(g, g.non_edges(), embeddings)
 
         scored.sort(key=lambda x: x[2], reverse=True)
@@ -329,13 +337,34 @@ class MinkPredictor:
             final_predictions.append(clean_match)
         return final_predictions
 
+
 if __name__ == "__main__":
     import doctest
+
     doctest.testmod()
 
     import python_ta
-    python_ta.check_all(config={
-        'extra-imports': ['sentence_transformers', 'plotly.graph_objects', 'networkx', 'plotly.subplots', 'numpy', 'sklearn.manifold', 'graph', 'similarity', 'load_graph', 'predictor', 'visualize', 'os', 're', 'math', 'random'],
-        'allowed-io': ['fit', '__init__', 'main', 'evaluate'],
-        'max-line-length': 120
-    })
+
+    python_ta.check_all(
+        config={
+            "extra-imports": [
+                "sentence_transformers",
+                "plotly.graph_objects",
+                "networkx",
+                "plotly.subplots",
+                "numpy",
+                "sklearn.manifold",
+                "graph",
+                "similarity",
+                "load_graph",
+                "predictor",
+                "visualize",
+                "os",
+                "re",
+                "math",
+                "random",
+            ],
+            "allowed-io": ["fit", "__init__", "main", "evaluate"],
+            "max-line-length": 120,
+        }
+    )

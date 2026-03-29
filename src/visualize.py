@@ -104,7 +104,7 @@ def graph_viz(
     )
 
     html_str = fig.to_html(full_html=True, include_plotlyjs=True)
-    
+
     click_handler = """
     <style>
         #note-panel {
@@ -160,7 +160,9 @@ def graph_viz(
         f.write(html_str)
 
 
-def layout_comparison(g: KnowledgeGraph, embeddings: dict[str, list[float]], output_path: str):
+def layout_comparison(
+    g: KnowledgeGraph, embeddings: dict[str, list[float]], output_path: str
+):
     """Generate a side-by-side comparison of structural vs semantic layouts."""
     nx_g = _build_nx_graph(g)
     nodes = list(nx_g.nodes())
@@ -219,13 +221,34 @@ def layout_comparison(g: KnowledgeGraph, embeddings: dict[str, list[float]], out
     fig.update_yaxes(showgrid=False, zeroline=False, showticklabels=False)
     fig.write_html(output_path)
 
+
 if __name__ == "__main__":
     import doctest
+
     doctest.testmod()
 
     import python_ta
-    python_ta.check_all(config={
-        'extra-imports': ['sentence_transformers', 'plotly.graph_objects', 'networkx', 'plotly.subplots', 'numpy', 'sklearn.manifold', 'graph', 'similarity', 'load_graph', 'predictor', 'visualize', 'os', 're', 'math', 'random'],
-        'allowed-io': ['fit', '__init__', 'main', 'evaluate'],
-        'max-line-length': 120
-    })
+
+    python_ta.check_all(
+        config={
+            "extra-imports": [
+                "sentence_transformers",
+                "plotly.graph_objects",
+                "networkx",
+                "plotly.subplots",
+                "numpy",
+                "sklearn.manifold",
+                "graph",
+                "similarity",
+                "load_graph",
+                "predictor",
+                "visualize",
+                "os",
+                "re",
+                "math",
+                "random",
+            ],
+            "allowed-io": ["fit", "__init__", "main", "evaluate"],
+            "max-line-length": 120,
+        }
+    )

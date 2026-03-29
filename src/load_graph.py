@@ -119,13 +119,35 @@ def load_vault(vault_path: str) -> KnowledgeGraph:
                 graph.add_link(note, resolved)
 
     return graph
+
+
 if __name__ == "__main__":
     import doctest
+
     doctest.testmod()
 
     import python_ta
-    python_ta.check_all(config={
-        'extra-imports': ['sentence_transformers', 'plotly.graph_objects', 'networkx', 'plotly.subplots', 'numpy', 'sklearn.manifold', 'graph', 'similarity', 'load_graph', 'predictor', 'visualize', 'os', 're', 'math', 'random'],
-        'allowed-io': ['fit', '__init__', 'main', 'evaluate'],
-        'max-line-length': 120
-    })
+
+    python_ta.check_all(
+        config={
+            "extra-imports": [
+                "sentence_transformers",
+                "plotly.graph_objects",
+                "networkx",
+                "plotly.subplots",
+                "numpy",
+                "sklearn.manifold",
+                "graph",
+                "similarity",
+                "load_graph",
+                "predictor",
+                "visualize",
+                "os",
+                "re",
+                "math",
+                "random",
+            ],
+            "allowed-io": ["fit", "__init__", "main", "evaluate"],
+            "max-line-length": 120,
+        }
+    )

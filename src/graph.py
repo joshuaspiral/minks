@@ -120,7 +120,9 @@ class KnowledgeGraph:
 
     def __str__(self) -> str:
         """Return a string representation showing note and edge counts."""
-        return f"KnowledgeGraph({len(self._notes)} notes, {len(self.get_edges())} edges)"
+        return (
+            f"KnowledgeGraph({len(self._notes)} notes, {len(self.get_edges())} edges)"
+        )
 
     def get_all_note_names(self) -> set:
         """Return a set of all note names in this graph."""
