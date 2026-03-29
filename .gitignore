@@ -8,6 +8,9 @@ report/report.log
 report/report.out
 report/report.synctex.gz
 
+src/vaults/
+src/output/
+
 proposal/proposal.fls
 proposal/proposal.log
 proposal/proposal.out
