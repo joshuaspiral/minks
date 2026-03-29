@@ -1,17 +1,11 @@
 """Utilities for loading an Obsidian vault into a KnowledgeGraph.
 
-This module provides functionality for parsing Markdown notes from an Obsidian vault
-and constructing a KnowledgeGraph representing the vault's structure. Each note becomes
-a vertex in the graph, and wiki-style links (e.g. [[Note Name]]) between notes become edges.
+Parses Markdown notes and constructs a graph representing the vault's structure.
 
-Functions:
-    _parse:
-        Cleans raw Markdown note content and extracts internal note links.
-
-    load_vault:
-        Reads all Markdown files in a vault directory and builds a KnowledgeGraph
-        containing the notes and their links.
+Copyright (c) 2026 Caellum Yip Hoi-Lee, Catherine Abdul-Samad, Michael Chen, Joshua Yeung.
+All rights reserved.
 """
+
 import re
 import os
 
@@ -100,7 +94,6 @@ def load_vault(vault_path: str) -> KnowledgeGraph:
     graph = KnowledgeGraph()
     note_links: dict[str, list[str]] = {}
 
-    # Load all notes
     for file_name in os.listdir(vault_path):
         if not file_name.endswith(".md"):
             continue
@@ -113,7 +106,6 @@ def load_vault(vault_path: str) -> KnowledgeGraph:
         graph.add_note(name, content)
         note_links[name] = links
 
-    # Add all links.
     # Build a lowercase name -> original name lookup to handle case-insensitive WikiLinks.
     note_names = graph.get_all_note_names()
     lower_to_name = {n.lower(): n for n in note_names}
@@ -127,3 +119,13 @@ def load_vault(vault_path: str) -> KnowledgeGraph:
                 graph.add_link(note, resolved)
 
     return graph
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
+
+    import python_ta
+    python_ta.check_all(config={
+        'extra-imports': ['sentence_transformers', 'plotly.graph_objects', 'networkx', 'plotly.subplots', 'numpy', 'sklearn.manifold', 'graph', 'similarity', 'load_graph', 'predictor', 'visualize', 'os', 're', 'math', 'random'],
+        'allowed-io': ['fit', '__init__', 'main', 'evaluate'],
+        'max-line-length': 120
+    })

@@ -1,10 +1,23 @@
+"""Similarity algorithms and embedding utilities for note comparison.
+
+Implements Jaccard, Adamic-Adar, and Sentence-BERT vector generation.
+
+Copyright (c) 2026 Caellum Yip Hoi-Lee, Catherine Abdul-Samad, Michael Chen, Joshua Yeung.
+All rights reserved.
+"""
+
 import math
 import re
+from graph import KnowledgeGraph
 
 
-def jaccard(g, u: str, v: str) -> float:
+def jaccard(g: KnowledgeGraph, u: str, v: str) -> float:
     """
     Returns the Jaccard Similarity Index of str u and v.
+
+    Preconditions:
+        - u in g.get_notes()
+        - v in g.get_notes()
     """
     nu, nv = g.get_neighbours(u), g.get_neighbours(v)
     intersection = len(nu & nv)
@@ -12,9 +25,13 @@ def jaccard(g, u: str, v: str) -> float:
     return intersection / union if union > 0 else 0.0
 
 
-def adamic_adar(g, u: str, v: str) -> float:
+def adamic_adar(g: KnowledgeGraph, u: str, v: str) -> float:
     """
     Returns the Adamic Adar score of str u and v.
+
+    Preconditions:
+        - u in g.get_notes()
+        - v in g.get_notes()
     """
     score = 0.0
     for w in g.get_neighbours(u) & g.get_neighbours(v):
@@ -39,6 +56,9 @@ def normalise(scores: list[float]) -> list[float]:
 def dot(a: list[float], b: list[float]) -> float:
     """
     Returns the dot product of vectors a and b.
+
+    Preconditions:
+        - len(a) == len(b)
     """
     if len(a) != len(b):
         raise ValueError(f"Vector length mismatch: {len(a)} vs {len(b)}")
@@ -55,6 +75,10 @@ def norm(a: list[float]) -> float:
 def cosine_similarity(a: list[float], b: list[float]) -> float:
     """
     Returns the cosine similarity score of vector a and b
+
+    Preconditions:
+        - len(a) == len(b)
+        - len(a) > 0
     """
     na, nb = norm(a), norm(b)
     if na == 0.0 or nb == 0.0:
@@ -64,27 +88,35 @@ def cosine_similarity(a: list[float], b: list[float]) -> float:
 
 class SentenceBERTEmbedder:
     """
-    Encodes note text into embedidng vectors for similarity computations.
+    Encodes note text into embedding vectors for similarity computations.
 
-    Attempts to use Sentence-BERT to encode, but if the library is unavailable
-    or the model cannot be loaded, then falls back to TF-IDF vectors computed using standard libraries only.
+    Attempts to use Sentence-BERT to encode, but if the library is unavailable,
+    the model cannot be loaded, or force_tfidf is True, it falls back to TF-IDF
+    vectors computed using standard libraries only.
+
+    Representation Invariants:
+        - self._use_fallback is True or self._model is not None
+        - not self._use_fallback or all(isinstance(v, float) for v in self._idf.values())
     """
     MODEL_NAME = "all-MiniLM-L6-v2"
 
-    def __init__(self):
+    def __init__(self, force_tfidf: bool = False) -> None:
         self._model = None
         self._vocab: list[str] = []
         self._idf: dict[str, float] = {}
-        self._use_fallback = False
+        self._use_fallback = force_tfidf
 
-        try:
-            from sentence_transformers import SentenceTransformer  # type: ignore
+        if not self._use_fallback:
+            try:
+                from sentence_transformers import SentenceTransformer  # type: ignore
 
-            self._model = SentenceTransformer(self.MODEL_NAME)
-            print("  [embedder] Using Sentence-BERT (all-MiniLM-L6-v2)")
-        except (ImportError, OSError):
-            print("  [embedder] Sentence-BERT unavailable — using TF-IDF fallback")
-            self._use_fallback = True
+                self._model = SentenceTransformer(self.MODEL_NAME)
+                print("  [embedder] Using Sentence-BERT (all-MiniLM-L6-v2)")
+            except (ImportError, OSError):
+                print("  [embedder] Sentence-BERT unavailable — using TF-IDF fallback")
+                self._use_fallback = True
+        else:
+            print("  [embedder] Forced TF-IDF generation active.")
 
     def _tokenize(self, text: str) -> list[str]:
         return re.findall(r"[a-z]+", text.lower())
@@ -145,3 +177,14 @@ class SentenceBERTEmbedder:
                 matrix[i][j] = s
                 matrix[j][i] = s
         return matrix
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
+
+    import python_ta
+    python_ta.check_all(config={
+        'extra-imports': ['sentence_transformers', 'plotly.graph_objects', 'networkx', 'plotly.subplots', 'numpy', 'sklearn.manifold', 'graph', 'similarity', 'load_graph', 'predictor', 'visualize', 'os', 're', 'math', 'random'],
+        'allowed-io': ['fit', '__init__', 'main', 'evaluate'],
+        'max-line-length': 120
+    })

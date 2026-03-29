@@ -1,4 +1,14 @@
+"""Main execution module for the Minks link prediction pipeline.
+
+Loads vaults, tunes hyper-parameters, evaluates predictions, and generates visualizations.
+
+Copyright (c) 2026 Caellum Yip Hoi-Lee, Catherine Abdul-Samad, Michael Chen, Joshua Yeung.
+
+All rights reserved.
+"""
+
 import os
+import argparse
 
 from graph import KnowledgeGraph
 from load_graph import load_vault
@@ -10,6 +20,14 @@ OUTPUT = "output"
 os.makedirs(OUTPUT, exist_ok=True)
 
 def main():
+    parser = argparse.ArgumentParser(description="Minks Missing Link Predictor")
+    parser.add_argument(
+        "--use-tfidf",
+        action="store_true",
+        help="Force the use of the custom TF-IDF algorithm instead of Sentence-BERT."
+    )
+    args = parser.parse_args()
+
     print("1. Loading vaults")
     vault_a = load_vault("vaults/vault_a")
     vault_b = load_vault("vaults/vault_b")
@@ -17,7 +35,7 @@ def main():
     print(f"  vault_b: {vault_b}")
 
     print("2. Fitting weights on vault_a (tuning set)")
-    predictor = MinkPredictor()
+    predictor = MinkPredictor(use_tfidf=args.use_tfidf)
     fit_results = predictor.fit(vault_a, k=K, holdout_frac=0.2, n_trials=5, steps=5)
 
     print(

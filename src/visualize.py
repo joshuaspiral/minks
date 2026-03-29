@@ -1,11 +1,20 @@
+"""Graph visualization utilities using NetworkX and Plotly.
+
+Generates interactive HTML visualizations of the knowledge graph and link predictions.
+
+Copyright (c) 2026 Caellum Yip Hoi-Lee, Catherine Abdul-Samad, Michael Chen, Joshua Yeung.
+All rights reserved.
+"""
+
 import networkx as nx
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import numpy as np
 from sklearn.manifold import TSNE
+from graph import KnowledgeGraph
 
 
-def _build_nx_graph(g) -> nx.Graph:
+def _build_nx_graph(g: KnowledgeGraph) -> nx.Graph:
     """Convert KnowledgeGraph to a NetworkX Graph."""
     nx_g = nx.Graph()
     nodes = list(g.get_all_note_names())
@@ -17,7 +26,7 @@ def _build_nx_graph(g) -> nx.Graph:
 
 
 def graph_viz(
-    g,
+    g: KnowledgeGraph,
     predictions: list[tuple[str, str, float]],
     output_path: str,
     title: str = "Knowledge Graph",
@@ -98,7 +107,7 @@ def graph_viz(
     fig.write_html(output_path)
 
 
-def layout_comparison(g, embeddings: dict[str, list[float]], output_path: str):
+def layout_comparison(g: KnowledgeGraph, embeddings: dict[str, list[float]], output_path: str):
     """Generate a side-by-side comparison of structural vs semantic layouts."""
     nx_g = _build_nx_graph(g)
     nodes = list(nx_g.nodes())
@@ -156,3 +165,14 @@ def layout_comparison(g, embeddings: dict[str, list[float]], output_path: str):
     fig.update_xaxes(showgrid=False, zeroline=False, showticklabels=False)
     fig.update_yaxes(showgrid=False, zeroline=False, showticklabels=False)
     fig.write_html(output_path)
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
+
+    import python_ta
+    python_ta.check_all(config={
+        'extra-imports': ['sentence_transformers', 'plotly.graph_objects', 'networkx', 'plotly.subplots', 'numpy', 'sklearn.manifold', 'graph', 'similarity', 'load_graph', 'predictor', 'visualize', 'os', 're', 'math', 'random'],
+        'allowed-io': ['fit', '__init__', 'main', 'evaluate'],
+        'max-line-length': 120
+    })
