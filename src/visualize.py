@@ -69,10 +69,7 @@ def graph_viz(
     node_x = [pos[node][0] for node in nx_g.nodes()]
     node_y = [pos[node][1] for node in nx_g.nodes()]
     node_names = list(nx_g.nodes())
-    node_hover = [
-        "<b>" + n + "</b><br><br>" + g.get_note(n).content[:500].replace("\n", "<br>")
-        for n in node_names
-    ]
+    node_contents = [g.get_note(n).content for n in node_names]
 
     fig.add_trace(
         go.Scatter(
@@ -80,7 +77,8 @@ def graph_viz(
             y=node_y,
             mode="markers",
             hoverinfo="text",
-            hovertext=node_hover,
+            text=node_names,
+            customdata=node_contents,
             marker=dict(showscale=False, color="lightblue", size=10, line_width=2),
             name="Notes",
         )
@@ -95,7 +93,62 @@ def graph_viz(
         yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
         plot_bgcolor="white",
     )
-    fig.write_html(output_path)
+
+    html_str = fig.to_html(full_html=True, include_plotlyjs=True)
+    
+    click_handler = """
+    <style>
+        #note-panel {
+            display: none;
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            width: 300px;
+            max-height: 400px;
+            overflow: auto;
+            background: white;
+            border: 1px solid black;
+            font-family: monospace;
+        }
+        .panel-header {
+            border-bottom: 1px solid black;
+            padding: 5px;
+            font-weight: bold;
+        }
+        .panel-body {
+            padding: 5px;
+        }
+        .close-btn {
+            float: right;
+            cursor: pointer;
+        }
+    </style>
+    <div id="note-panel">
+        <div class="panel-header">
+            <span class="close-btn" onclick="document.getElementById('note-panel').style.display='none'">[X]</span>
+            <span id="note-title"></span>
+        </div>
+        <div class="panel-body" id="note-content"></div>
+    </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            var gd = document.querySelector('.plotly-graph-div');
+            if (gd) {
+                gd.on('plotly_click', function(data) {
+                    var pt = data.points[0];
+                    if (pt.customdata) {
+                        document.getElementById('note-title').textContent = pt.text;
+                        document.getElementById('note-content').textContent = pt.customdata;
+                        document.getElementById('note-panel').style.display = 'block';
+                    }
+                });
+            }
+        });
+    </script>
+    """
+    html_str = html_str.replace("</body>", click_handler + "</body>")
+    with open(output_path, "w") as f:
+        f.write(html_str)
 
 
 def layout_comparison(g, embeddings: dict[str, list[float]], output_path: str):
