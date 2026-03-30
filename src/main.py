@@ -98,6 +98,7 @@ def main():
     layout_comparison(
         vault_b,
         embeddings_b,
+        predictions,
         output_path=os.path.join(OUTPUT, "layout_comparison.html"),
     )
 

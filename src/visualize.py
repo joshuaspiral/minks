@@ -164,7 +164,10 @@ def graph_viz(
 
 
 def layout_comparison(
-    g: KnowledgeGraph, embeddings: dict[str, list[float]], output_path: str
+    g: KnowledgeGraph,
+    embeddings: dict[str, list[float]],
+    predictions: list[tuple[str, str, float]],
+    output_path: str,
 ):
     """Generate a side-by-side comparison of structural vs semantic layouts."""
     nx_g = _build_nx_graph(g)
@@ -183,6 +186,14 @@ def layout_comparison(
     tsne_x = tsne_coords[:, 0]
     tsne_y = tsne_coords[:, 1]
 
+    # Calculate predicted link positions for t-SNE
+    tsne_pos = {nodes[i]: (tsne_x[i], tsne_y[i]) for i in range(len(nodes))}
+    tsne_pred_x, tsne_pred_y = [], []
+    for u, v, _ in predictions:
+        if u in tsne_pos and v in tsne_pos:
+            tsne_pred_x.extend([tsne_pos[u][0], tsne_pos[v][0], None])
+            tsne_pred_y.extend([tsne_pos[u][1], tsne_pos[v][1], None])
+
     fig = make_subplots(
         rows=1,
         cols=2,
@@ -197,11 +208,26 @@ def layout_comparison(
             text=nodes,
             hoverinfo="text",
             marker=dict(color="blue", size=8, opacity=0.7),
-            name="Spring",
+            name="Spring Notes",
         ),
         row=1,
         col=1,
     )
+
+    # Draw the red dashed predicted links FIRST so they sit behind the nodes in the t-SNE plot
+    if tsne_pred_x:
+        fig.add_trace(
+            go.Scatter(
+                x=tsne_pred_x,
+                y=tsne_pred_y,
+                mode="lines",
+                line=dict(width=1.5, color="red", dash="dot"),
+                hoverinfo="none",
+                name="Predicted Links",
+            ),
+            row=1,
+            col=2,
+        )
 
     fig.add_trace(
         go.Scatter(
@@ -211,14 +237,14 @@ def layout_comparison(
             text=nodes,
             hoverinfo="text",
             marker=dict(color="green", size=8, opacity=0.7),
-            name="t-SNE",
+            name="t-SNE Notes",
         ),
         row=1,
         col=2,
     )
 
     fig.update_layout(
-        title_text="Layout Comparison", showlegend=False, plot_bgcolor="white"
+        title_text="Layout Comparison", showlegend=True, plot_bgcolor="white"
     )
     fig.update_xaxes(showgrid=False, zeroline=False, showticklabels=False)
     fig.update_yaxes(showgrid=False, zeroline=False, showticklabels=False)
