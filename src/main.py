@@ -22,11 +22,6 @@ os.makedirs(OUTPUT, exist_ok=True)
 
 def main():
     parser = argparse.ArgumentParser(description="Minks Missing Link Predictor")
-    parser.add_argument(
-        "--use-tfidf",
-        action="store_true",
-        help="Force the use of the custom TF-IDF algorithm instead of Sentence-BERT.",
-    )
     args = parser.parse_args()
 
     print("1. Loading vaults")
@@ -36,7 +31,7 @@ def main():
     print(f"  vault_b: {vault_b}")
 
     print("2. Fitting weights on vault_a (tuning set)")
-    predictor = MinkPredictor(use_tfidf=args.use_tfidf)
+    predictor = MinkPredictor()
     fit_results = predictor.fit(vault_a, k=K, holdout_frac=0.2, n_trials=5, steps=5)
 
     print(

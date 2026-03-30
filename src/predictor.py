@@ -34,7 +34,7 @@ class MinkPredictor:
     DEFAULT_K = 10
 
     def __init__(
-        self, w_struct: float = 0.4, w_sem: float = 0.6, use_tfidf: bool = False
+        self, w_struct: float = 0.4, w_sem: float = 0.6
     ) -> None:
         """Initialise a new MinkPredictor class with provided structural and semantic weights.
 
@@ -43,13 +43,12 @@ class MinkPredictor:
         """
         self.w_struct = w_struct
         self.w_sem = w_sem
-        self._use_tfidf = use_tfidf
         self._embedder: Optional[SentenceBERTEmbedder] = None
 
     def _get_embedder(self) -> SentenceBERTEmbedder:
         """Return the NLP sentence embedder, initialising a new one if none are present."""
         if self._embedder is None:
-            self._embedder = SentenceBERTEmbedder(force_tfidf=self._use_tfidf)
+            self._embedder = SentenceBERTEmbedder()
         return self._embedder
 
     def compute_embeddings(self, g: KnowledgeGraph) -> dict[str, list[float]]:
@@ -105,7 +104,14 @@ class MinkPredictor:
             jaccard_score = jaccard(g, u, v)
             struct = max(jaccard_score, aa_scaled)
 
-            sem = cosine_similarity(embeddings[u], embeddings[v])
+            # Cap the semantic score to 0.0 if either note has < 0 characters of content
+            note_u_len = len(g.get_note(u).content.strip())
+            note_v_len = len(g.get_note(v).content.strip())
+            if note_u_len < 30 or note_v_len < 30:
+                sem = 0.0
+            else:
+                sem = cosine_similarity(embeddings[u], embeddings[v])
+
             combined = (self.w_struct * struct) + (self.w_sem * sem)
 
             results.append((u, v, combined, struct, sem))
@@ -181,10 +187,10 @@ class MinkPredictor:
         n_trials: int = 5,
         steps: int = 5,
     ) -> dict:
-        """Tune using MRR to correctly break ties when sorting rank shifts."""
+        """Tune using recall@k to correctly break ties when sorting rank shifts."""
         embeddings = self.compute_embeddings(g_tune)
         grid = [i / steps for i in range(steps + 1)]
-        best = {"mrr": -1.0, "w_struct": 0.4, "w_sem": 0.6}
+        best = {"recall@k": -1.0, "mrr": -1.0, "w_struct": 0.4, "w_sem": 0.6}
         results = []
         for ws in grid:
             self.w_struct = ws
@@ -205,14 +211,22 @@ class MinkPredictor:
                     "mrr": res["mrr"],
                 }
             )
-            # Tune based on MRR to capture internal rank improvements
-            if res["mrr"] > best["mrr"]:
-                best = {"mrr": res["mrr"], "w_struct": ws, "w_sem": 1.0 - ws}
+            # Tune based on Recall@K for stability, using MRR to break ties
+            if (res["recall@k"] > best["recall@k"]) or (
+                res["recall@k"] == best["recall@k"] and res["mrr"] > best["mrr"]
+            ):
+                best = {
+                    "recall@k": res["recall@k"],
+                    "mrr": res["mrr"],
+                    "w_struct": ws,
+                    "w_sem": 1.0 - ws,
+                }
 
         self.w_struct = best["w_struct"]
         self.w_sem = best["w_sem"]
         print(
-            f"  Best weights: w_struct={self.w_struct}, w_sem={self.w_sem} (mrr={best['mrr']:.3f})"
+            f"  Best weights: w_struct={self.w_struct}, w_sem={self.w_sem} "
+            f"(recall@{k}={best['recall@k']:.3f}, mrr={best['mrr']:.3f})"
         )
         return {"best": best, "grid": results}
 
@@ -360,7 +374,6 @@ if __name__ == "__main__":
                 "predictor",
                 "visualize",
                 "os",
-                "re",
                 "math",
                 "random",
             ],

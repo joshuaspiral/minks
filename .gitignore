@@ -1,20 +1,20 @@
 # Python
 __pycache__/
 *.pyc
+venv/
 
 # LaTeX build artifacts
-report/report.fls
-report/report.log
-report/report.out
-report/report.synctex.gz
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.pdf
+!report/report.pdf
 
-src/vaults/
+# Output and Data
 src/output/
-
-proposal/proposal.fls
-proposal/proposal.log
-proposal/proposal.out
-proposal/proposal.synctex.gz
-
-# Virtual environment
-venv/
+src/vaults/

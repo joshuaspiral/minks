@@ -7,7 +7,6 @@ All rights reserved.
 """
 
 import math
-import re
 from graph import KnowledgeGraph
 
 
@@ -90,80 +89,30 @@ class SentenceBERTEmbedder:
     """
     Encodes note text into embedding vectors for similarity computations.
 
-    Attempts to use Sentence-BERT to encode, but if the library is unavailable,
-    the model cannot be loaded, or force_tfidf is True, it falls back to TF-IDF
-    vectors computed using standard libraries only.
-
-    Representation Invariants:
-        - self._use_fallback is True or self._model is not None
-        - not self._use_fallback or all(isinstance(v, float) for v in self._idf.values())
+    Uses Sentence-BERT to encode note content into dense semantic vectors.
     """
 
     MODEL_NAME = "all-MiniLM-L6-v2"
 
-    def __init__(self, force_tfidf: bool = False) -> None:
-        self._model = None
-        self._vocab: list[str] = []
-        self._idf: dict[str, float] = {}
-        self._use_fallback = force_tfidf
+    def __init__(self) -> None:
+        try:
+            from sentence_transformers import SentenceTransformer  # type: ignore
 
-        if not self._use_fallback:
-            try:
-                from sentence_transformers import SentenceTransformer  # type: ignore
-
-                self._model = SentenceTransformer(self.MODEL_NAME)
-                print("  [embedder] Using Sentence-BERT (all-MiniLM-L6-v2)")
-            except (ImportError, OSError):
-                print("  [embedder] Sentence-BERT unavailable — using TF-IDF fallback")
-                self._use_fallback = True
-        else:
-            print("  [embedder] Forced TF-IDF generation active.")
-
-    def _tokenize(self, text: str) -> list[str]:
-        return re.findall(r"[a-z]+", text.lower())
+            self._model = SentenceTransformer(self.MODEL_NAME)
+            print("  [embedder] Using Sentence-BERT (all-MiniLM-L6-v2)")
+        except (ImportError, OSError):
+            raise RuntimeError("Sentence-BERT is required but could not be loaded.")
 
     def fit(self, note_texts: list[str]) -> None:
         """
-        Fit the TF-IDf vocab and IDF weights on all note texts.
+        No-op for Sentence-BERT, as it uses a pre-trained model.
         """
-        if not self._use_fallback:
-            return
-        note_len = len(note_texts)
-        df = {}
-        for doc in note_texts:
-            for token in set(self._tokenize(doc)):
-                df[token] = df.get(token, 0) + 1
-        self._vocab = sorted(df.keys())
-        self._idf = {
-            token: math.log((note_len + 1) / (count + 1)) + 1.0
-            for token, count in df.items()
-        }
-
-    def _tfidf_vector(self, text: str) -> list[float]:
-        """
-        Return a normalised TF-IDF vector for a single note.
-        """
-        tokens = self._tokenize(text)
-        if not tokens:
-            return [0.0] * len(self._vocab)
-        tf: dict[str, float] = {}
-        for tok in tokens:
-            tf[tok] = tf.get(tok, 0) + 1
-        total = len(tokens)
-        vec = [
-            (tf.get(tok, 0) / total) * self._idf.get(tok, 0.0) for tok in self._vocab
-        ]
-        n = norm(vec)
-        return [x / n for x in vec] if n > 0 else vec
+        pass
 
     def encode(self, texts: list[str]) -> list[list[float]]:
         """
         Encode a list of texts into embedding vectors.
         """
-        if self._use_fallback:
-            if not self._vocab:
-                raise RuntimeError(f"Call fit() on full corpus before encode().")
-            return [self._tfidf_vector(t) for t in texts]
         arr = self._model.encode(texts, show_progress_bar=False)
         return arr.tolist()
 
@@ -203,7 +152,6 @@ if __name__ == "__main__":
                 "predictor",
                 "visualize",
                 "os",
-                "re",
                 "math",
                 "random",
             ],

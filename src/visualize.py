@@ -144,11 +144,14 @@ def graph_viz(
             var gd = document.querySelector('.plotly-graph-div');
             if (gd) {
                 gd.on('plotly_click', function(data) {
-                    var pt = data.points[0];
-                    if (pt.customdata) {
-                        document.getElementById('note-title').textContent = pt.text;
-                        document.getElementById('note-content').textContent = pt.customdata;
-                        document.getElementById('note-panel').style.display = 'block';
+                    for (var i = 0; i < data.points.length; i++) {
+                        var pt = data.points[i];
+                        if (pt.customdata) {
+                            document.getElementById('note-title').textContent = pt.text;
+                            document.getElementById('note-content').textContent = pt.customdata;
+                            document.getElementById('note-panel').style.display = 'block';
+                            break;
+                        }
                     }
                 });
             }
