@@ -20,7 +20,6 @@
 \end{center}
 
 \section*{1. Introduction and Research Question}
-% copy pasted from proposal. will change soon.
 
 Personal knowledge management (PKM) tools such as Obsidian(\cite{obsidian}) implement the Zettelkasten methodology(\cite {zettelkasten_method}), allowing users to organize their knowledge as a network of interlinked Markdown notes. A note in the network can link to other notes in the network through internal links called "WikiLinks", forming a graph where the notes are vertices and the links are edges. The benefit of such a system lies in its ability to provide users with insights into the relationship between ideas, and build a stronger understanding of their notes. However, many users (including ourselves), tend to under-link their notes, leading to a lackluster knowledge network. For example, one of the ways one of our group members uses Obsidian is through a "hub-and-spoke" structure, where minimal note vertices known as "hubs" form a directory with WikiLinks to other notes in the same topic (e.g. a hub named "CSC111.md" with WikiLinks to ("Tree.md", "Recursion.md", etc.)). This however, defeats the purpose of Obsidian, failing to capture the lateral connections notes can have in the network which actually make a knowledge graph useful. For instance, a link from "Trees.md" to "Abstract Syntax Trees (CS).md" to "Abstract Syntax Trees (Linguistics).md".
 
@@ -39,14 +38,14 @@ To evaluate our prediction pipeline and avoid circular bias during parameter tun
 \section*{3. Computational Overview}
 
 \subsection*{Data Representation}
-We model an Obsidian vault using a custom \texttt{KnowledgeGraph} class, representing the vault as an undirected graph $G = (V, E)$. Each Markdown note is parsed by \texttt{load\_graph.py} to strip YAML frontmatter and extract plaintext, becoming a \texttt{\_Note} vertex $v \in V$. WikiLinks between notes become edges $\{u, v\} \in E$.
+We model an Obsidian vault using a custom \texttt{KnowledgeGraph} class, representing the vault as an undirected graph $G = (V, E)$. Each Markdown note is parsed by \texttt{load\_graph.py} to strip YAML frontmatter and extract plaintext, becoming a \texttt{\_Note} vertex $v \in V$. WikiLinks between notes become edges $\{u, v\} \in E$. To accomplish this, we implemented a file parser that recursively traverses vault directories, using regular expressions to extract WikiLinks (e.g., \texttt{[[Note Name]]}), and clean the raw Markdown for accurate semantic analysis.
 
 \subsection*{Major Computations}
 Our prediction pipeline, orchestrated by the \texttt{MinkPredictor} class, performs the following major computations:
 \begin{enumerate}
     \item \textbf{Structural Similarity:} We manually implemented the Jaccard index and the Adamic-Adar index. Adamic-Adar assigns higher weight to shared neighbours with fewer connections, capturing the intuition that a rare mutual connection is stronger evidence for a missing link than a highly connected "hub" note.
     \item \textbf{Semantic Similarity:} To detect lateral connections between \textbf{structurally} isolated notes, we generate text embeddings. We built a manual \textbf{TF-IDF} (Term Frequency-Inverse Document Frequency) vectorizer from scratch to serve as a baseline, alongside an implementation using the \texttt{sentence-transformers} library for dense vector embeddings, which we use to calculate the Cosine Similarity between these vectors.
-    \item \textbf{Weight Tuning \& Holdout Evaluation:} We compute a combined score $S = (w_{struct} \times \text{Structural}) + (w_{sem} \times \text{Semantic})$. We evaluate this using an edge holdout method: randomly removing 20\% of existing edges, predicting the top-$k$ missing links, and calculating \texttt{recall@k} and \texttt{precision@k}.
+    \item \textbf{Weight Tuning \& Holdout Evaluation:} We compute a combined score $S = (w_{struct} \times \text{Structural}) + (w_{sem} \times \text{Semantic})$. During execution, our program automatically performs a grid search across possible weight combinations on our tuning vault to find the optimal balance. It then freezes these weights and performs repeated edge holdout trials on the test vault,randomly removing 20\% of existing edges, predicting the top-$k$ missing links, and calculating average \texttt{recall@k} and \texttt{precision@k} metrics to evaluate model performance.
 \end{enumerate}
 
 \subsection*{Visualization and New Libraries}
@@ -59,8 +58,8 @@ We used three libraries to report our results interactively:
 
 \section*{4. Instructions for Running the Program}
 
-\begin{enumerate}
-    \item \textbf{Obtain Datasets:} Download the \texttt{vaults.zip} file from \[#todo insert link\]. Extract the folder so that the \texttt{vaults/} directory (containing \texttt{vault\_a} and \texttt{vault\_b}) is in the same directory as the \texttt{src/} folder.
+\begin{enumerate}i
+    \item \textbf{Obtain Datasets:} Download the \texttt{vaults.zip} file from [\#todo insert link]. Extract the folder so that the \texttt{vaults/} directory (containing \texttt{vault\_a} and \texttt{vault\_b}) is in the same directory as the \texttt{src/} folder.
     \item \textbf{Install Dependencies:} Run: \\ \texttt{pip install -r src/requirements.txt}. This will install \texttt{plotly}, \texttt{networkx}, \texttt{scikit-learn}, and \texttt{sentence-transformers}.
     \item \textbf{Execute:} Run the main pipeline via: \\ \texttt{python src/main.py}.
     \item \textbf{Expected Output:} The console will print the progress of the weight-fitting grid search on Vault A, followed by the holdout evaluation metrics (Precision/Recall at $k$) for Vault B. It will output the top predicted missing links and graph statistics (centrality/components). Finally, it will generate two interactive HTML files in the \texttt{output/} directory: \texttt{vault\_b\_graph.html} and \texttt{layout\_comparison.html}. Open these in a web browser to explore the visualizations.
@@ -70,17 +69,21 @@ We used three libraries to report our results interactively:
 
 Following feedback on our Phase 1 proposal, we made several critical adjustments to our methodology to improve computational complexity:
 \begin{itemize}
-    \item \textbf{Preventing Circular Evaluation:} 
+    \item \textbf{Preventing Circular Evaluation:} Originally, we planned to evaluate the model on the same vault used for tuning. To prevent this circular bias, we secured a second dataset: Vault A for grid-searching weights, and Vault B as an unseen test set to evaluate out-of-domain generalizability.
     \item \textbf{Manual TF-IDF Implementation:} To ensure our project met the computational complexity requirements, we did not solely rely on the \texttt{sentence-transformers} library. We built a TF-IDF embedder from scratch within \texttt{similarity.py}, managing term frequencies, inverse document frequencies, and vector normalization natively.
-    \item \textbf{Precision Metrics:} We added \texttt{precision@k} calculations alongside \texttt{recall@k}, ...
-    \item \textbf{Semantic vs. Structural Visual Comparison:} We expanded our visualization pipeline to include t-SNE, directly comparing a layout generated from pure semantic embeddings against the force-directed structural layout.
+    \item \textbf{Precision Metrics:} We added \texttt{precision@k} calculations alongside \texttt{recall@k} to better understand the model's accuracy, since suggesting too many irrelevant links (low precision) degrades the utility of a PKM system.
+    \item \textbf{Semantic vs. Structural Visual Comparison:} We expanded our visualization pipeline to include t-SNE, directly comparing a layout generated from pure semantic embeddings against the force-directed structural layout to visually determine disparity.
 \end{itemize}
 
 \section*{6. Discussion}
 
-The results of our computational exploration provide a nuanced answer to our research question: graph-based algorithms augmented with semantic NLP can successfully identify missing connections, but the definition of a "meaningful" link remains highly subjective.
+The results of our computational exploration provide a nuanced answer to our research question: graph-based algorithms augmented with semantic NLP can successfully identify missing connections, but the quantitative definition of a "meaningful" link remains highly subjective.
 
-...
+When evaluated on the tuning set (Vault A), our grid search identified that a combination of structural and semantic similarity (specifically $w_{struct}=0.4, w_{sem}=0.6$) outperformed purely structural or purely semantic approaches. 
+
+The primary limitation we encountered was the inherent sparsity of the graph and the subjective nature of "missing" links. Our edge holdout evaluation assumes that randomly removed edges are the only valid "correct" predictions. In reality, the algorithm often predicts highly meaningful lateral connections that the user simply hadn't thought to create yet, which the strict evaluation metrics unfairly penalize as "incorrect."
+
+As a next step for further exploration, implementing a "human-in-the-loop" feedback system where users can actively accept or reject suggested links within the interactive GUI would allow the algorithm to dynamically learn user-specific linking preferences over time, overcoming the limitations of static evaluation metrics.
 
 \bibliography{references}
 
