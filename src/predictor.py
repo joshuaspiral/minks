@@ -172,7 +172,7 @@ class MinkPredictor:
                 g, holdout_frac=holdout_frac, seed=trial * 17
             )
             # Dynamically set K for metric validity if not overridden
-            dynamic_k = max(k, len(held_out))
+            dynamic_k = min(k, len(held_out))
 
             preds = [
                 (u, v, s)
