@@ -5,6 +5,7 @@
 \usepackage{hyperref}
 \usepackage{graphicx}
 \usepackage{attachfile}
+\usepackage{csquotes}
 
 \bibliographystyle{ieeetr}
 \nocite{*}
@@ -17,7 +18,7 @@
 \maketitle
 
 \begin{center}
-    \includegraphics[width=0.4\textwidth]{../mink.jpg}
+    \includegraphics[width=0.4\textwidth]{mink.jpg}
 \end{center}
 
 \section*{1. Introduction and Research Question}
@@ -46,13 +47,13 @@ Our prediction pipeline, orchestrated by the \texttt{MinkPredictor} class, perfo
 \begin{enumerate}
     \item \textbf{Structural Similarity:} We manually implemented the Jaccard index and the Adamic-Adar index. Adamic-Adar assigns higher weight to shared neighbours with fewer connections, capturing the intuition that a rare mutual connection is stronger evidence for a missing link than a highly connected "hub" note. The output of this index is then normalized to enable standardized comparison. The Jaccard index measures the proportion of shared neighbors relative to the total number of unique neighbors across both notes. It serves as a straightforward, normalized baseline of structural similarity, capturing the intuition that two notes are highly related if a large amount of their overall connections overlap.
     \item \textbf{Semantic Similarity:} Structural similarity alone fails to detect lateral connections between notes that share context but are \textbf{structurally} isolated. To detect these connections, we analyze the semantic content of notes. We utilized a pre-trained sentence-BERT transformer from the \texttt{sentence-transformers} library to generate dense, high-dimensional vector embeddings from the parsed note contents. We then calculate Cosine similarity between vectors $S_C = \frac{A \cdot B}{\|A\| \|B\|}$ to accurately evaluate semantic similarity.
-    \item \textbf{Weight Tuning \& Holdout Evaluation:} We compute a combined score $S = (w_{struct} \times \text{Structural}) + (w_{sem} \times \text{Semantic})$. During the tuning phase on Vault A, our program automatically performs a grid search across possible weight combinations on our training vault to find the combination that yields the highest recall@k values. We intentionally restricted our search space to a grid of six combinations: $(0.0, 1.0), (0.2, 0.8), (0.4, 0.6), (0.6, 0.4), (0.8, 0.2),$ and $(1.0, 0.0)$. This space prevents an excessive amount of expensive computations that would arise from testing on fine increments. The coarse nature of the grid also prevents accidental overfitting on one specific vault's linking habits, increasing overall generalizability. Once the optimal combination has been discovered, we freeze it and perform repeated edge holdout trials on the test vault. We randomly remove 20\% of existing edges, predict the top-$k$ missing links, and calculate average \texttt{recall@k} and \texttt{precision@k} metrics to evaluate model performance.
+    \item \textbf{Weight Tuning \& Holdout Evaluation:} We compute a combined score $S = (w_{struct} \times \text{Structural}) + (w_{sem} \times \text{Semantic})$. During the tuning phase on Vault A, our program automatically performs a grid search across possible weight combinations on our training vault to find the combination that yields the highest recall@k values. We intentionally restricted our search space to a grid of six combinations: $(0.0, 1.0), (0.2, 0.8), (0.4, 0.6), (0.6, 0.4),\\ (0.8, 0.2),$ and $(1.0, 0.0)$. This space prevents an excessive amount of expensive computations that would arise from testing on fine increments. The coarse nature of the grid also prevents accidental overfitting on one specific vault's linking habits, increasing overall generalizability. Once the optimal combination has been discovered, we freeze it and perform repeated edge holdout trials on the test vault. We randomly remove 20\% of existing edges, predict the top-$k$ missing links, and calculate average \texttt{recall@k} and \texttt{precision@k} metrics to evaluate model performance.
 \end{enumerate}
 
 \subsection*{Visualization and New Libraries}
 We used three libraries to report our results interactively:
 \begin{itemize}
-    \item \textbf{NetworkX:} We convert our custom graph object into a \texttt{networkx.Graph} in \texttt{visualize.py} to use its \texttt{spring\_layout()} function, calculates 2D node coordinates based on structural edges.
+    \item \textbf{NetworkX:} We convert our custom graph object into a \texttt{networkx.Graph} in \texttt{visualize.py} to use its\\ \texttt{spring\_layout()} function, calculates 2D node coordinates based on structural edges.
     \item \textbf{Plotly:} We use \texttt{plotly.graph\_objects} to render the calculated coordinates into an interactive HTML visualization, visually distinguishing minks' predicted links (red, dashed) from existing WikiLinks (grey, solid).
     \item \textbf{Scikit-Learn (t-SNE):} To compare structural versus semantic clustering, we use \texttt{sklearn.manifold.TSNE} to reduce our high-dimensional text embeddings into a 2D space, plotted side-by-side with the NetworkX layout.
 \end{itemize}
@@ -60,9 +61,9 @@ We used three libraries to report our results interactively:
 \section*{4. Instructions for Running the Program}
 
 \begin{enumerate}
-    \item \textbf{Obtain Datasets:} \textattachfile{vaults.tar.gz}{Download the vaults here: vaults.tar.gz}. Extract the folder so that the \texttt{vaults/} directory (containing \texttt{vault\_a} and \texttt{vault\_b}) is in the same directory as the \texttt{src/} folder.
+    \item \textbf{Obtain Datasets:} Double-click to download the vaults: \textcolor{blue}{\textattachfile[color=0 0 1]{vaults.zip}{vaults.zip}}. Extract the folder so that the \texttt{vaults/} directory (containing \texttt{vault\_a} and \texttt{vault\_b}) is in the same directory as the \texttt{src/} folder.
     \item \textbf{Navigate to src:} Run: \\ \texttt{cd src}. This will navigate your directory into the src folder.
-    \item \textbf{Install Dependencies:} Run: \\ \texttt{pip install -r requirements.txt}. This will install \texttt{plotly}, \texttt{networkx}, \texttt{scikit-learn}, and \texttt{sentence-transformers}.
+    \item \textbf{Install Dependencies:} Run: \\ \texttt{pip install -r requirements.txt}. This will install \texttt{plotly}, \texttt{networkx}, \texttt{scikit-learn}, and\\ \texttt{sentence-transformers}.
     \item \textbf{Execute:} Run the main pipeline via: \\ \texttt{python main.py}.
     \item \textbf{Expected Output:} The console will print the progress of the weight-fitting grid search on Vault A, followed by the holdout evaluation metrics (Precision/Recall at $k$) for Vault B. It will output the top predicted missing links and graph statistics (centrality/components). Finally, it will generate two interactive HTML files in the \texttt{output/} directory: \texttt{vault\_b\_graph.html} and \texttt{layout\_comparison.html}. Open these in a web browser to explore the visualizations.
 \end{enumerate}
