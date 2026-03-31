@@ -32,8 +32,8 @@ Whilst manually reviewing every note to add missing links is a valuable learning
 
 To evaluate our prediction pipeline and avoid circular bias during parameter tuning, we used two distinct datasets:
 \begin{itemize}
-    \item \textbf{Vault A (Tuning Set):} A personal Obsidian vault belonging to one of the group members, consisting primarily of undergraduate course notes. This dataset was exclusively used in the \texttt{MinkPredictor.fit()} method to grid-search the optimal weighting between structural and semantic similarity scores.
-    \item \textbf{Vault B (Test Set):} The open-source digital garden of Jacky Zhao (\url{jzhao.xyz}). This vault contains over 700 notes spanning computer science, philosophy, and other topics. It provides a denser and more diverse graph, allowing us to test our algorithm's out-of-domain generalizability. We utilized the raw \texttt{.md} plaintext and internal WikiLinks from this set.
+    \item \textbf{Vault A (Tuning Set):} The open-source digital garden of Jacky Zhao (\url{jzhao.xyz}). This vault contains over 700 notes spanning computer science, philosophy, and other topics. It provides a denser and more diverse graph, allowing us to test our algorithm's out-of-domain generalizability. We utilized the raw \texttt{.md} plaintext and internal WikiLinks from this set.
+    \item \textbf{Vault B (Test Set):} A personal Obsidian vault belonging to one of the group members, consisting primarily of undergraduate course notes. This dataset was exclusively used in the \texttt{MinkPredictor.fit()} method to grid-search the optimal weighting between structural and semantic similarity scores.
 \end{itemize}
 
 \section*{3. Computational Overview}
