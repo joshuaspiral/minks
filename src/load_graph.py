@@ -98,7 +98,7 @@ def load_vault(vault_path: str) -> KnowledgeGraph:
         if not file_name.endswith(".md"):
             continue
 
-        with open(os.path.join(vault_path, file_name)) as file:
+        with open(os.path.join(vault_path, file_name), encoding="utf-8") as file:
             raw = file.read()
 
         content, links = _parse(raw)
