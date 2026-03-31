@@ -91,7 +91,6 @@ class SentenceBERTEmbedder:
 
     Uses Sentence-BERT to encode note content into dense semantic vectors.
     """
-
     MODEL_NAME = "all-MiniLM-L6-v2"
 
     def __init__(self) -> None:

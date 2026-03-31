@@ -8,9 +8,7 @@ All rights reserved.
 """
 
 import os
-import argparse
 
-from graph import KnowledgeGraph
 from load_graph import load_vault
 from predictor import MinkPredictor
 from visualize import graph_viz, layout_comparison
@@ -21,9 +19,12 @@ os.makedirs(OUTPUT, exist_ok=True)
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Minks Missing Link Predictor")
-    args = parser.parse_args()
-
+    """
+    Runs the entire evaluation and prediction process.
+    Uses vault_a as a tuning set to fit scoring weights(w/ w_struct and w_sem) via grid search,
+    then evaluates the fixed weights on the heldout vault_b.
+    Predictions and graph visualizations are written to OUTPUT.
+    """
     print("1. Loading vaults")
     vault_a = load_vault("vaults/vault_a")
     vault_b = load_vault("vaults/vault_b")
@@ -34,16 +35,7 @@ def main():
     predictor = MinkPredictor()
     fit_results = predictor.fit(vault_a, k=K, holdout_frac=0.2, n_trials=5, steps=5)
 
-    print(
-        f"\n  {'w_struct':>8}  {'w_sem':>6}  {'recall@'+str(K):>10}  {'precision@'+str(K):>13}"
-    )
-    print("  " + "-" * 44)
-    for row in fit_results["grid"]:
-        marker = " ◄" if row["w_struct"] == fit_results["best"]["w_struct"] else ""
-        print(
-            f"  {row['w_struct']:>8.1f}  {row['w_sem']:>6.1f}  "
-            f"{row['recall@k']:>10.4f}  {row['precision@k']:>13.4f}{marker}"
-        )
+    _print_grid_table(fit_results, K)
 
     print("3. Evaluating on vault_b (test set)")
     print(f"  Fixed weights: w_struct={predictor.w_struct}, w_sem={predictor.w_sem}")
@@ -69,10 +61,8 @@ def main():
 
     print("4. Predicting top-k links for vault_b")
     predictions = predictor.predict(vault_b, k=K, embeddings=embeddings_b)
-    print(f"\n  {'Rank':>4}  {'u':28} {'v':28}  {'score':>7}")
-    print("  " + "-" * 76)
-    for rank, (u, v, score) in enumerate(predictions, 1):
-        print(f"  {rank:>4}  {u:28} {v:28}  {score:.4f}")
+
+    _print_predictions_table(predictions)
 
     print("5. Graph statistics (vault_b)")
     top_hubs = sorted(
@@ -104,6 +94,33 @@ def main():
 
     print("Done")
     print(f"  Output written to: {OUTPUT}/")
+
+
+def _print_grid_table(fit_results: dict, k: int) -> None:
+    """
+    Print the weight grid search results as a formatted table.
+    Marks the best-performing pair with an arrow('◄') indicator
+    """
+    print(
+        f"\n  {'w_struct':>8}  {'w_sem':>6}  {'recall@'+str(K):>10}  {'precision@'+str(K):>13}"
+    )
+    print("  " + "-" * 44)
+    for row in fit_results["grid"]:
+        marker = " ◄" if row["w_struct"] == fit_results["best"]["w_struct"] else ""
+        print(
+            f"  {row['w_struct']:>8.1f}  {row['w_sem']:>6.1f}  "
+            f"{row['recall@k']:>10.4f}  {row['precision@k']:>13.4f}{marker}"
+        )
+
+
+def _print_predictions_table(predictions: list) -> None:
+    """
+    Print the top-K predicted links as a ranked table.
+    """
+    print(f"\n  {'Rank':>4}  {'u':28} {'v':28}  {'score':>7}")
+    print("  " + "-" * 76)
+    for rank, (u, v, score) in enumerate(predictions, 1):
+        print(f"  {rank:>4}  {u:28} {v:28}  {score:.4f}")
 
 
 if __name__ == "__main__":

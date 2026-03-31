@@ -13,7 +13,8 @@ from graph import KnowledgeGraph
 
 
 def _parse(raw: str) -> tuple[str, list[str]]:
-    """Return the cleaned text content and list of WikiLink targets found in raw.
+    """
+    Return the cleaned text content and list of WikiLink targets found in raw.
 
     Applies the following transformations in order:
 
@@ -78,7 +79,8 @@ def _parse(raw: str) -> tuple[str, list[str]]:
 
 
 def load_vault(vault_path: str) -> KnowledgeGraph:
-    """Return a KnowledgeGraph built from all Markdown files in vault_path.
+    """
+    Return a KnowledgeGraph built from all Markdown files in vault_path.
 
     Each .md file becomes a note vertex. WikiLinks between notes that resolve
     to an existing note in the vault become edges. Link resolution is
@@ -98,7 +100,7 @@ def load_vault(vault_path: str) -> KnowledgeGraph:
         if not file_name.endswith(".md"):
             continue
 
-        with open(os.path.join(vault_path, file_name)) as file:
+        with open(os.path.join(vault_path, file_name), encoding="utf-8") as file:
             raw = file.read()
 
         content, links = _parse(raw)

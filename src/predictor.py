@@ -1,4 +1,5 @@
-"""Missing link prediction using structural and semantic similarity scores.
+"""
+Missing link prediction using structural and semantic similarity scores.
 
 Evaluates note pairs to suggest meaningful new WikiLinks in the knowledge graph.
 
@@ -18,7 +19,9 @@ from similarity import (
 
 
 class MinkPredictor:
-    """A missing link prediction class for note graphs that uses a weighted combination of graph structure and semantic similarity scores.
+    """
+    A missing link prediction class for note graphs that
+    uses a weighted combination of graph structure and semantic similarity scores.
 
     Instance Attributes:
         - w_struct: The weight applied to the structural similarity score.
@@ -36,7 +39,8 @@ class MinkPredictor:
     def __init__(
         self, w_struct: float = 0.4, w_sem: float = 0.6
     ) -> None:
-        """Initialise a new MinkPredictor class with provided structural and semantic weights.
+        """
+        Initialise a new MinkPredictor class with provided structural and semantic weights.
 
         Preconditions:
             - w_sem + w_struct == 1
@@ -46,13 +50,17 @@ class MinkPredictor:
         self._embedder: Optional[SentenceBERTEmbedder] = None
 
     def _get_embedder(self) -> SentenceBERTEmbedder:
-        """Return the NLP sentence embedder, initialising a new one if none are present."""
+        """
+        Return the NLP sentence embedder, initialising a new one if none are present.
+        """
         if self._embedder is None:
             self._embedder = SentenceBERTEmbedder()
         return self._embedder
 
     def compute_embeddings(self, g: KnowledgeGraph) -> dict[str, list[float]]:
-        """Return a dictionary mapping note names to their NLP vector embeddings for the graph."""
+        """
+        Return a dictionary mapping note names to their NLP vector embeddings for the graph.
+        """
         notes = g.get_notes()
         texts = []
         for n in notes:
@@ -76,7 +84,9 @@ class MinkPredictor:
         pairs: list[tuple[str, str]],
         embeddings: dict[str, list[float]],
     ) -> list[tuple[str, str, float, float, float]]:
-        """Calculate the combined similarity score for a given list of note pairs."""
+        """
+        Calculate the combined similarity score for a given list of note pairs.
+        """
         aa_scores = []
         for u, v in pairs:
             aa_scores.append(adamic_adar(g, u, v))
@@ -123,7 +133,9 @@ class MinkPredictor:
         predictions: list[tuple[str, str, float]],
         k: int,
     ) -> float:
-        """Calculate Mean Reciprocal Rank to allow granular weight tuning."""
+        """
+        Calculate Mean Reciprocal Rank to allow granular weight tuning.
+        """
         if not held_out:
             return 0.0
 
@@ -146,7 +158,9 @@ class MinkPredictor:
         n_trials: int = 5,
         embeddings: Optional[dict] = None,
     ) -> dict:
-        """Evaluate the predictor's performance, usnig MRR to fix tuning ties."""
+        """
+        Evaluate the predictor's performance, usnig MRR to fix tuning ties.
+        """
         if embeddings is None:
             embeddings = self.compute_embeddings(g)
         recalls, precisions, mrrs = [], [], []
@@ -187,7 +201,9 @@ class MinkPredictor:
         n_trials: int = 5,
         steps: int = 5,
     ) -> dict:
-        """Tune using recall@k to correctly break ties when sorting rank shifts."""
+        """
+        Tune using recall@k to correctly break ties when sorting rank shifts.
+        """
         embeddings = self.compute_embeddings(g_tune)
         grid = [i / steps for i in range(steps + 1)]
         best = {"recall@k": -1.0, "mrr": -1.0, "w_struct": 0.4, "w_sem": 0.6}
@@ -235,7 +251,9 @@ class MinkPredictor:
         g: KnowledgeGraph,
         embeddings: Optional[dict] = None,
     ) -> list[tuple[str, str, float, float, float]]:
-        """Score all non-existent edges in the given graph and return them sorted by highest score.
+        """
+        Score all non-existent edges in the given graph and return them sorted by highest score.
+
         Returns a list of tuples containing the node pair, combined score, structural score, and semantic score.
         """
 
@@ -251,7 +269,9 @@ class MinkPredictor:
         holdout_frac: float = 0.2,
         seed: int = 42,
     ) -> tuple[KnowledgeGraph, list[tuple[str, str]]]:
-        """Hide a fixed percentage of the graph's links."""
+        """
+        Hide a fixed percentage of the graph's links.
+        """
         rng = random.Random(seed)
 
         practice_graph = g.copy()
@@ -277,7 +297,9 @@ class MinkPredictor:
         predictions: list[tuple[str, str, float]],
         k: int,
     ) -> float:
-        """Calculate the recall at k for the actual hidden edges that were found in a given set of predictions,"""
+        """
+        Calculate the recall at k for the actual hidden edges that were found in a given set of predictions.
+        """
         if len(held_out) == 0:
             return 0.0
 
@@ -306,7 +328,9 @@ class MinkPredictor:
         predictions: list[tuple[str, str, float]],
         k: int,
     ) -> float:
-        """Calculate the proportion of the top k predictions that were actually hidden edges."""
+        """
+        Calculate the proportion of the top k predictions that were actually hidden edges.
+        """
         if k == 0:
             return 0.0
 
@@ -332,7 +356,9 @@ class MinkPredictor:
         k: int = DEFAULT_K,
         embeddings: Optional[dict] = None,
     ) -> list[tuple[str, str, float]]:
-        """Predict and return the top-k missing links in the graph."""
+        """
+        Predict and return the top-k missing links in the graph.
+        """
 
         if embeddings is None:
             embeddings = self.compute_embeddings(g)
