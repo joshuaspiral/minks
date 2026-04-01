@@ -13,7 +13,7 @@ venv/
 *.out
 *.synctex.gz
 *.pdf
-!report/proejct_report.pdf
+!report/project_report.pdf
 
 # Output and Data
 src/output/
