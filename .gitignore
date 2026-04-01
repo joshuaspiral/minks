@@ -1,3 +1,6 @@
+# Michael's Pycharm Stuff
+.idea/
+
 # Python
 __pycache__/
 *.pyc
@@ -13,7 +16,6 @@ venv/
 *.out
 *.synctex.gz
 *.pdf
-!report/project_report.pdf
 
 # Output and Data
 src/output/

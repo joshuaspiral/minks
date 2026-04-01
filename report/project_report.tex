@@ -19,7 +19,7 @@
 \maketitle
 
 \begin{center}
-    \includegraphics[width=0.4\textwidth]{../mink.jpg}
+    \includegraphics[width=0.4\textwidth]{../assets/mink.jpg}
 \end{center}
 
 \section*{1. Introduction and Research Question}
@@ -92,7 +92,7 @@ The highly intertwined topology of this network enables a diverse portfolio of m
 Personal knowledge graphs, on the other hand, fundamentally lack this dense interconnectivity. They heavily favor sparse "hub-and-spoke" topologies, in which central directory notes link out to many isolated topic notes. In this scenario, two "spoke" notes will typically only share the hub as a mutual neighbour. Because the hub is their only neighbor, the Jaccard index determines they share 100\% of their connections, over-predicting the relationship and granting a 1.0 score. Conversely, the Adamic-Adar index will grant a score near-zero because the only shared neighbour has many other connections. The contradictory relationship between the two algorithms under this topology dramatically reduces their effectiveness in assessing the quality of missing links. The semantic approach is entirely independent of the consequences of mismatched topology; ergo, it yields higher scores in the grid search.
 \begin{figure}[h!]
     \centering
-    \includegraphics[width=0.5\textwidth]{../wikigraphvis.png}
+    \includegraphics[width=0.5\textwidth]{wikigraphvis.png}
     \caption{A visualization of the English Wikipedia network. The extreme density and interconnectedness of the nodes form massive communities that would have better suited our structural similarity algorithms(\cite{adumb2024wikipedia}).}
     \label{fig:wikigraph}
 \end{figure}

@@ -1,5 +1,5 @@
 # Minks
-![Mink Mascot](mink.jpg)
+![Mink Mascot](assets/mink.jpg)
 
 **Minks** ("missing links") predicts and suggests missing connections in Obsidian knowledge graphs using structural and semantic similarity algorithms.
 
