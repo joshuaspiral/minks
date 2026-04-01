@@ -41,7 +41,7 @@ def main():
     print(f"  Fixed weights: w_struct={predictor.w_struct}, w_sem={predictor.w_sem}")
 
     embeddings_b = predictor.compute_embeddings(vault_b)
-    eval_results = predictor.evaluate(
+    eval_results = predictor.run_holdout_eval(
         vault_b, k=K, holdout_frac=0.2, n_trials=5, embeddings=embeddings_b
     )
 
@@ -96,7 +96,7 @@ def main():
     print(f"  Output written to: {OUTPUT}/")
 
 
-def _print_grid_table(fit_results: dict, k: int) -> None:
+def _print_grid_table(fit_results: dict) -> None:
     """
     Print the weight grid search results as a formatted table.
     Marks the best-performing pair with an arrow('◄') indicator

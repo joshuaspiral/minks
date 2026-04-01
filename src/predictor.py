@@ -35,6 +35,8 @@ class MinkPredictor:
     """
 
     DEFAULT_K = 10
+    AA_CLIP_PERCENTILE = 0.95
+    TRIAL_SEED = 17
 
     def __init__(
         self, w_struct: float = 0.4, w_sem: float = 0.6
@@ -87,48 +89,52 @@ class MinkPredictor:
         """
         Calculate the combined similarity score for a given list of note pairs.
         """
-        aa_scores = []
-        for u, v in pairs:
-            aa_scores.append(adamic_adar(g, u, v))
+        aa_scores = [adamic_adar(g, u, v) for u, v in pairs]
 
-        # Use 95th percentile or log scaling to prevent hub outliers from squashing scores
-        if aa_scores:
-            sorted_aa = sorted(aa_scores)
-            clip_idx = int(len(sorted_aa) * 0.95)
-            max_aa = sorted_aa[clip_idx] if len(sorted_aa) > 0 else 0
-            if max_aa == 0:
-                max_aa = max(aa_scores)  # Fallback
-        else:
-            max_aa = 0
+        max_aa = self._compute_aa_max(aa_scores)
 
         results = []
         for i in range(len(pairs)):
             u, v = pairs[i]
-
-            if max_aa > 0:
-                # Cap at 1.0 to handle values above the 95th percentile
-                aa_scaled = min(aa_scores[i] / max_aa, 1.0)
-            else:
-                aa_scaled = 0.0
-
-            jaccard_score = jaccard(g, u, v)
-            struct = max(jaccard_score, aa_scaled)
-
-            # Cap the semantic score to 0.0 if either note has < 0 characters of content
-            note_u_len = len(g.get_note(u).content.strip())
-            note_v_len = len(g.get_note(v).content.strip())
-            if note_u_len < 30 or note_v_len < 30:
-                sem = 0.0
-            else:
-                sem = cosine_similarity(embeddings[u], embeddings[v])
-
-            combined = (self.w_struct * struct) + (self.w_sem * sem)
-
+            aa_scaled = min(aa_scores[i] / max_aa, 1.0) if max_aa > 0 else 0.0
+            combined, struct, sem = self._compute_pair_components(g, u, v, aa_scaled, embeddings)
             results.append((u, v, combined, struct, sem))
         return results
 
+    def _compute_aa_max(self, aa_scores: list[float]) -> float:
+        """
+        Returns the normalization ceiling for Adamic-Adar scores.
+        Uses the 95th percentile value to prevent hub outliers from
+        dominating the score range, falling back to the true max if
+        the percentile value is 0.
+        """
+        if not aa_scores:
+            return 0
+        sorted_aa = sorted(aa_scores)
+        clip_idx = int(len(sorted_aa) * self.AA_CLIP_PERCENTILE)
+        clipped = sorted_aa[clip_idx]
+        return clipped if clipped > 0 else max(aa_scores)
+
+    def _compute_pair_components(self, g, u, v, aa_scaled, embeddings) -> tuple[float, float, float]:
+        """
+        compute the structural, semantic, and combined scores for a single note pair.
+        Returns a tuple of (combined, struct, sem).
+        """
+        jaccard_score = jaccard(g, u, v)
+        struct = max(jaccard_score, aa_scaled)
+
+        note_u_len = len(g.get_note(u).content.strip())
+        note_v_len = len(g.get_note(v).content.strip())
+        if note_u_len < 30 or note_v_len < 30:
+            sem = 0.0
+        else:
+            sem = cosine_similarity(embeddings[u], embeddings[v])
+
+        combined = (self.w_struct * struct) + (self.w_sem * sem)
+        return combined, struct, sem
+
+    @staticmethod
     def _mrr_at_k(
-        self,
         held_out: list[tuple[str, str]],
         predictions: list[tuple[str, str, float]],
         k: int,
@@ -150,7 +156,7 @@ class MinkPredictor:
 
         return mrr_sum / len(correct)
 
-    def evaluate(
+    def run_holdout_eval(
         self,
         g: KnowledgeGraph,
         k: int = DEFAULT_K,
@@ -168,19 +174,12 @@ class MinkPredictor:
         dynamic_k = k
 
         for trial in range(n_trials):
-            g_reduced, held_out = self._holdout_split(
-                g, holdout_frac=holdout_frac, seed=trial * 17
-            )
-            # Dynamically set K for metric validity if not overridden
-            dynamic_k = min(k, len(held_out))
+            recall, precision, mrr, dynamic_k = self._run_trial(
+                g, k, holdout_frac, embeddings, seed=trial * self.TRIAL_SEED)
 
-            preds = [
-                (u, v, s)
-                for u, v, s, _, _ in self.score_all(g_reduced, embeddings=embeddings)
-            ]
-            recalls.append(self._recall_at_k(held_out, preds, dynamic_k))
-            precisions.append(self._precision_at_k(held_out, preds, dynamic_k))
-            mrrs.append(self._mrr_at_k(held_out, preds, dynamic_k))
+            recalls.append(recall)
+            precisions.append(precision)
+            mrrs.append(mrr)
 
         return {
             "k": dynamic_k,
@@ -193,6 +192,20 @@ class MinkPredictor:
             "per_trial_precision": precisions,
         }
 
+    def _run_trial(self, g, k, holdout_frac, embeddings, seed) -> tuple[float, float, float, float]:
+        """
+        Run a single holdout trial and return tuple (recall, precision, mrr, dynamic_k) at k.
+        """
+        g_reduced, held_out = self._holdout_split(g, holdout_frac, seed)
+        dynamic_k = min(k, len(held_out))
+        preds = [(u, v, s) for u, v, s, _, _ in self.score_all(g_reduced, embeddings)]
+        return (
+            self._recall_at_k(held_out, preds, dynamic_k),
+            self._precision_at_k(held_out, preds, dynamic_k),
+            self._mrr_at_k(held_out, preds, dynamic_k),
+            dynamic_k
+        )
+
     def fit(
         self,
         g_tune: KnowledgeGraph,
@@ -202,40 +215,23 @@ class MinkPredictor:
         steps: int = 5,
     ) -> dict:
         """
-        Tune using recall@k to correctly break ties when sorting rank shifts.
+        Grid search over (w_struct, w_sem) pairs, tuning on recall@k with MRR as tiebreaker.
+        Sets the best weights on the predictor and returns the full grid results.
         """
         embeddings = self.compute_embeddings(g_tune)
         grid = [i / steps for i in range(steps + 1)]
         best = {"recall@k": -1.0, "mrr": -1.0, "w_struct": 0.4, "w_sem": 0.6}
         results = []
+
         for ws in grid:
-            self.w_struct = ws
-            self.w_sem = 1.0 - ws
-            res = self.evaluate(
-                g_tune,
-                k=k,
-                holdout_frac=holdout_frac,
-                n_trials=n_trials,
-                embeddings=embeddings,
-            )
-            results.append(
-                {
-                    "w_struct": ws,
-                    "w_sem": 1.0 - ws,
-                    "recall@k": res["recall@k"],
-                    "precision@k": res["precision@k"],
-                    "mrr": res["mrr"],
-                }
-            )
-            # Tune based on Recall@K for stability, using MRR to break ties
-            if (res["recall@k"] > best["recall@k"]) or (
-                res["recall@k"] == best["recall@k"] and res["mrr"] > best["mrr"]
-            ):
+            res = self._evaluate_weights(ws, g_tune, k, holdout_frac, n_trials, embeddings)
+            results.append(res)
+            if self._is_better_result(res, best):
                 best = {
                     "recall@k": res["recall@k"],
                     "mrr": res["mrr"],
-                    "w_struct": ws,
-                    "w_sem": 1.0 - ws,
+                    "w_struct": res["w_struct"],
+                    "w_sem": res["w_sem"]
                 }
 
         self.w_struct = best["w_struct"]
@@ -245,6 +241,30 @@ class MinkPredictor:
             f"(recall@{k}={best['recall@k']:.3f}, mrr={best['mrr']:.3f})"
         )
         return {"best": best, "grid": results}
+
+    def _evaluate_weights(self, ws, g_tune, k, holdout_frac, n_trials, embeddings) -> dict:
+        """
+        Evaluates a single (w_struct, w_sem) weight pair and return its metrics.
+        """
+        self.w_struct = ws
+        self.w_sem = 1.0 - ws
+        res = self.run_holdout_eval(g_tune, k, holdout_frac, n_trials, embeddings)
+        return {
+            "w_struct": self.w_struct,
+            "w_sem": self.w_sem,
+            "recall@k": res["recall@k"],
+            "precision@k": res["precision@k"],
+            "mrr": res["mrr"]
+        }
+
+    @staticmethod
+    def _is_better_result(res: dict, best: dict) -> bool:
+        """
+        Returns True if res outperforms best, using MRR to break recall ties.
+        """
+        return res["recall@k"] > best["recall@k"] or (
+            res["recall@k"] == best["recall@k"] and res["mrr"] > best["mrr"]
+        )
 
     def score_all(
         self,
@@ -263,8 +283,8 @@ class MinkPredictor:
         scored.sort(key=lambda x: x[2], reverse=True)
         return scored
 
+    @staticmethod
     def _holdout_split(
-        self,
         g: KnowledgeGraph,
         holdout_frac: float = 0.2,
         seed: int = 42,
@@ -291,8 +311,8 @@ class MinkPredictor:
 
         return practice_graph, hidden_links
 
+    @staticmethod
     def _recall_at_k(
-        self,
         held_out: list[tuple[str, str]],
         predictions: list[tuple[str, str, float]],
         k: int,
@@ -322,8 +342,8 @@ class MinkPredictor:
 
         return matches / len(correct)
 
+    @staticmethod
     def _precision_at_k(
-        self,
         held_out: list[tuple[str, str]],
         predictions: list[tuple[str, str, float]],
         k: int,
